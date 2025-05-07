@@ -1,0 +1,23 @@
+# Core netunicorn packages
+netunicorn-base>=0.3.5
+netunicorn-client>=0.3.1
+netunicorn-library>=0.3.1
+
+# Jupyter and notebook support
+jupyter>=1.1.1
+jupyterlab>=4.4.2
+notebook>=7.4.2
+ipykernel>=6.29.5
+
+# Environment and utility packages
+python-dotenv>=1.1.0
+returns>=0.20.0
+pydantic>=2.0.0
+typing-extensions>=4.13.2
+cloudpickle>=3.1.1
+requests>=2.32.3
+
+# Development tools
+black>=24.2.0  # code formatting
+pytest>=8.0.0  # testing
+pytest-cov>=4.1.0  # test coverage 
