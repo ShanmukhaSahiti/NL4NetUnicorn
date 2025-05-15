@@ -1,0 +1,27 @@
+[
+  {
+    "type": "example",
+    "name": "basic_example",
+    "content": {
+      "type": "code",
+      "content": "import os\nimport time\nfrom pprint import pprint\n\n# Import netunicorn packages\nfrom netunicorn.client.remote import RemoteClient, RemoteClientException\nfrom netunicorn.base.experiment import Experiment, ExperimentStatus\nfrom netunicorn.base.pipeline import Pipeline\nfrom netunicorn.library.tasks.basic import SleepTask\nfrom returns.pipeline import is_successful\nfrom returns.result import Result\n\ndef main():\n    # API connection parameters\n    endpoint = 'https://pinot.cs.ucsb.edu/netunicorn'\n    login = '293nmay25'\n    password = '4Ij9Du65jrqj'\n\n    # Create pipeline\n    pipeline = Pipeline()\n    pipeline = pipeline.then([\n        SleepTask(5),\n        SleepTask(3)\n    ]).then(\n        SleepTask(10)\n    )\n\n    # Create client and check health\n    client = RemoteClient(endpoint=endpoint, login=login, password=password)\n    print(f\"Health check: {client.healthcheck()}\")\n\n    # Get available nodes\n    nodes = client.get_nodes()\n    print(\"\\nAvailable nodes:\")\n    for element in nodes:\n        print(element)\n\n    # Select nodes for experiment\n    interesting_nodes = nodes.filter(lambda node: node.name.startswith('raspi-'))\n    working_nodes = interesting_nodes.take(3)\n    print(\"\\nSelected nodes for experiment:\")\n    print(working_nodes)\n\n    # Create and prepare experiment\n    experiment = Experiment().map(pipeline, working_nodes)\n    experiment_name = 'experiment_cool_name'\n\n    # Clean up any existing experiment with the same name\n    try:\n        client.delete_experiment(experiment_name)\n    except RemoteClientException:\n        pass\n\n    # Prepare the experiment\n    client.prepare_experiment(experiment, experiment_name)\n\n    # Wait for experiment to be ready\n    print(\"\\nWaiting for experiment to be ready...\")\n    while True:\n        info = client.get_experiment_status(experiment_name)\n        print(info.status)\n        if info.status == ExperimentStatus.READY:\n            break\n        time.sleep(20)\n\n    # Check deployment status\n    prepared_experiment = info.experiment\n    print(\"\\nDeployment status:\")\n    for deployment in prepared_experiment:\n        print(f\"Node name: {deployment.node}\")\n        print(f\"Deployed correctly: {deployment.prepared}\")\n        print(f\"Error: {deployment.error}\\n\")\n\n    # Start execution\n    print(\"\\nStarting experiment execution...\")\n    client.start_execution(experiment_name)\n\n    # Wait for experiment to finish\n    print(\"\\nWaiting for experiment to finish...\")\n    while True:\n        info = client.get_experiment_status(experiment_name)\n        print(info.status)\n        if info.status != ExperimentStatus.RUNNING:\n            break\n        time.sleep(10)\n\n    # Print results\n    print(\"\\nExperiment results:\")\n    if info.execution_result:\n        for report in info.execution_result:\n            print(f\"Node name: {report.node.name}\")\n            print(f\"Error: {report.error}\")\n\n            result, log = report.result\n            print(type(result))\n            if isinstance(result, Result):\n                data = result.unwrap() if is_successful(result) else result\n                pprint(data)\n\n            print(\"\\nLogs:\")\n            for line in log:\n                print(line.strip())\n            print()\n    else:\n        print(\"No execution results available\")\n\nif __name__ == \"__main__\":\n    main() ",
+      "imports": [
+        "import os",
+        "import time",
+        "from pprint import pprint",
+        "from netunicorn.client.remote import RemoteClient, RemoteClientException",
+        "from netunicorn.base.experiment import Experiment, ExperimentStatus",
+        "from netunicorn.base.pipeline import Pipeline",
+        "from netunicorn.library.tasks.basic import SleepTask",
+        "from returns.pipeline import is_successful",
+        "from returns.result import Result"
+      ],
+      "functions": [
+        {
+          "name": "main",
+          "parameters": ""
+        }
+      ]
+    }
+  }
+]
