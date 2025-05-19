@@ -11,7 +11,7 @@ def main():
         # in the nl4netunicorn_llm/ directory (relative to CWD, which should be NL4NetUnicorn/).
         rag_system = NetUnicornRAG()
         prompt = "Create a NetUnicorn script that connects to the server, selects one available node, and runs a sleep task for 10 seconds."
-        
+        #prompt = "Create a NetUnicorn script to run an Ookla speed test on one available node and print the results."
         print(f"Sending prompt to RAG system: \"{prompt}\"")
         code = rag_system.generate_code(prompt)
         
