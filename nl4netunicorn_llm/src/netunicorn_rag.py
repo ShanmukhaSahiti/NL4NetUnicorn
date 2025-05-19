@@ -84,11 +84,15 @@ class NetUnicornRAG:
                 except Exception as e:
                     print(f"Error deleting experiment {{experiment_name}}: {{e}} (possibly non-existent, safe to ignore)")
                 ```
-        7.  **Experiment Lifecycle**:
+        7.  **Experiment Lifecycle & Results**:
             *   Prepare the experiment: `client.prepare_experiment(pipeline, working_nodes, experiment_name)`
             *   Start the experiment execution: `client.start_execution(experiment_name)`
             *   Wait for the experiment to complete: `client.wait_for_experiment(experiment_name)`
-            *   (Optional) Print or process results: `results = client.get_experiment_status(experiment_name).execution_result`
+            *   Retrieve and print results: 
+                ```python
+                results = client.get_experiment_status(experiment_name).execution_result
+                print(f"Experiment results: {{results}}")
+                ```
         8.  **Output Format**: Generate only the Python code block. Do not include any explanatory text before or after the code block.
         9.  **Error Handling**: Include basic error handling for operations like deleting an experiment.
         10. **Imports**: Ensure all imports are at the top of the script.
