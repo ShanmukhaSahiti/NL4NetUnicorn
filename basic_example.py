@@ -36,8 +36,8 @@ def main():
         print(element)
 
     # Select nodes for experiment
-    interesting_nodes = nodes.filter(lambda node: node.name.startswith('raspi-'))
-    working_nodes = interesting_nodes.take(3)
+    interesting_nodes = nodes.filter(lambda node: node.name == 'snl-server-5')
+    working_nodes = interesting_nodes.take(1)
     print("\nSelected nodes for experiment:")
     print(working_nodes)
 
