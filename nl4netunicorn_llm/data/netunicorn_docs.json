@@ -1,0 +1,30 @@
+[
+  {
+    "source": "NetUnicorn Basic Client Usage",
+    "content": "To interact with NetUnicorn, you first need to create a RemoteClient instance. Example: \nfrom netunicorn.client.remote import RemoteClient\nclient = RemoteClient(endpoint='your_endpoint', login='your_login', password='your_password')\nclient.healthcheck() can be used to verify the connection."
+  },
+  {
+    "source": "NetUnicorn Experiment Basics",
+    "content": "An Experiment in NetUnicorn maps a Pipeline to a set of nodes. Example: \nfrom netunicorn.base.experiment import Experiment\nfrom netunicorn.base.pipeline import Pipeline\n# Assume 'pipeline' is a defined Pipeline object and 'working_nodes' is a list of Node objects\nexperiment = Experiment().map(pipeline, working_nodes)"
+  },
+  {
+    "source": "NetUnicorn Pipeline Basics",
+    "content": "A Pipeline defines a sequence of tasks. Tasks are added using .then(). Example: \nfrom netunicorn.base.pipeline import Pipeline\nfrom netunicorn.library.tasks.basic import SleepTask\npipeline = Pipeline().then(SleepTask(5))"
+  },
+  {
+    "source": "NetUnicorn Node Selection",
+    "content": "To get nodes, use client.get_nodes(). You can filter nodes or take a subset. Example: \nall_nodes = client.get_nodes()\n# To use a specific number of available nodes:\nworking_nodes = all_nodes.take(1) # Takes the first available node\n# To filter for a specific node by name:\n# working_nodes = all_nodes.filter(lambda node: node.name == 'snl-server-5').take(1)\nEnsure working_nodes is a list-like structure suitable for prepare_experiment."
+  },
+  {
+    "source": "NetUnicorn Experiment Lifecycle and Naming",
+    "content": "Define a unique string for experiment_name, e.g., experiment_name = \"my_sleep_experiment\".\nBefore preparing, you can delete any pre-existing experiment with the same name:\nfrom netunicorn.client.remote import RemoteClient\n# client = RemoteClient(...) # Assume client is initialized\nexperiment_name = \"your_experiment_name_here\" # Define your experiment name\ntry:\n    client.delete_experiment(experiment_name)\nexcept Exception as e:\n    print(f\"Info: Could not delete experiment {experiment_name} (may not exist): {e}\")\n\nThen, prepare, start, and wait for the experiment:\n# Assume 'pipeline' is a defined Pipeline object and 'working_nodes' is a list of Node objects\nclient.prepare_experiment(pipeline, working_nodes, experiment_name)\nprint(f\"Experiment {experiment_name} prepared. Waiting for readiness...\")\n# Robust scripts should poll client.get_experiment_status(experiment_name).status until it's 'READY'.\nclient.start_execution(experiment_name)\nprint(f\"Experiment {experiment_name} started. Waiting for completion...\")\nclient.wait_for_experiment(experiment_name)\nprint(f\"Experiment {experiment_name} finished.\")\nresults = client.get_experiment_status(experiment_name).execution_result\nprint(f\"Results: {results}\")"
+  },
+  {
+    "source": "NetUnicorn SleepTask",
+    "content": "The SleepTask makes the node sleep for a specified number of seconds. Example: \nfrom netunicorn.library.tasks.basic import SleepTask\ntask = SleepTask(duration_in_seconds=10) # e.g., SleepTask(10) for 10 seconds."
+  },
+  {
+    "source": "NetUnicorn Full Script Structure Example",
+    "content": "A typical NetUnicorn script involves: \n1. Importing necessary classes (e.g., `RemoteClient`, `Pipeline`, `SleepTask`). \n2. Defining NetUnicorn connection parameters (endpoint, login, password) - these will be injected by the RAG. \n3. Creating a `RemoteClient` instance. \n4. Creating a `Pipeline` and adding tasks using `.then()`. \n5. Getting and selecting nodes (e.g., `client.get_nodes().take(1)`). \n6. Defining an `experiment_name` (string). \n7. Deleting any pre-existing experiment with the same name (using try-except). \n8. Preparing the experiment: `client.prepare_experiment(pipeline, nodes, experiment_name)`. \n9. Starting the experiment: `client.start_execution(experiment_name)`. \n10. Waiting for completion: `client.wait_for_experiment(experiment_name)`. \n11. Retrieving and printing results: `client.get_experiment_status(experiment_name).execution_result`.\nExample snippet for lifecycle:\n```python\n# ... imports, client, pipeline, nodes defined ...\nexperiment_name = \"my_unique_experiment_name\"\ntry:\n    client.delete_experiment(experiment_name)\nexcept Exception as e:\n    print(f\"Info: could not delete {experiment_name}: {e}\")\nclient.prepare_experiment(pipeline, working_nodes, experiment_name)\nclient.start_execution(experiment_name)\nstatus = client.wait_for_experiment(experiment_name)\nprint(f\"Experiment finished with status: {status}\")\nresults = client.get_experiment_status(experiment_name).execution_result\nprint(results)\n```"
+  }
+] 
