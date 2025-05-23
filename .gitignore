@@ -50,3 +50,6 @@ Thumbs.db
 .coverage
 htmlcov/
 .pytest_cache/ 
+
+.gitignore
+./nl4netunicorn_llm/.env.template
