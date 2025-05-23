@@ -51,5 +51,5 @@ Thumbs.db
 htmlcov/
 .pytest_cache/ 
 
-.gitignore
-./nl4netunicorn_llm/.env.template
+netu/
+nl4netunicorn_llm/.env.template

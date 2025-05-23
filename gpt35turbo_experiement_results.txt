@@ -1,0 +1,39 @@
+Testing RAG system with prompt: "Create a NetUnicorn script that connects to the server, selects one available node, and runs a sleep task for 10 seconds."
+--- Generated Code ---
+from netunicorn.client.remote import RemoteClient
+from netunicorn.base.pipeline import Pipeline
+from netunicorn.library.tasks.basic import SleepTask
+
+# Credentials
+endpoint = 'https://pinot.cs.ucsb.edu/netunicorn'
+login = '293nmay25'
+password = '4Ij9Du65jrqj'
+
+# Create RemoteClient instance
+client = RemoteClient(endpoint=endpoint, login=login, password=password)
+
+# Define pipeline with SleepTask for 10 seconds
+pipeline = Pipeline().then(SleepTask(10))
+
+# Get available nodes and select one
+nodes = client.get_nodes()
+working_nodes = nodes.take(1)  # Select the first available node
+
+# Define experiment name
+experiment_name = "nl4netunicorn_experiment"
+
+# Delete any pre-existing experiment with the same name
+try:
+    client.delete_experiment(experiment_name)
+except Exception as e:
+    print(f"Error deleting experiment {experiment_name}: {e} (possibly non-existent, safe to ignore)")
+
+# Prepare, start, and wait for experiment
+client.prepare_experiment(pipeline, working_nodes, experiment_name)
+client.start_execution(experiment_name)
+client.wait_for_experiment(experiment_name)
+
+# Retrieve and print results
+results = client.get_experiment_status(experiment_name).execution_result
+print(f"Experiment results: {results}")
+----------------------
