@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "nl4netunicorn-rag"))
 
-from src.netunicorn_rag import NetUnicornRAG
+from nl4netunicorn_llm.src.netunicorn_rag import NetUnicornRAG
 import logging
 
 # Configure logging

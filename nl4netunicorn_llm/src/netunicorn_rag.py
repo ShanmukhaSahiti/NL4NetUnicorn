@@ -12,7 +12,7 @@ from langchain_core.documents import Document
 
 class NetUnicornRAG:
     def __init__(self, docs_path="nl4netunicorn_llm/data/netunicorn_docs.json"):
-        load_dotenv(dotenv_path="nl4netunicorn_llm/.env")
+        load_dotenv(dotenv_path=".env")
 
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         if not self.openai_api_key:
@@ -117,11 +117,27 @@ class NetUnicornRAG:
             generated_code = generated_code[:-len("```")].strip()
         return generated_code
 
+    # Log retrieved chunks that model finds most relevant
+    def log_retrieved_chunks(self, user_prompt: str, k: int = 3) -> str:
+        retriever = self.vector_store.as_retriever()
+        retrieved_docs = retriever.get_relevant_documents(user_prompt)
+        log = [f"Retrieved Context Chunks for: \"{user_prompt}\"\n"]
+
+        for i, doc in enumerate(retrieved_docs[:k]):
+            source = doc.metadata.get('source', 'unknown')
+            content = doc.page_content.strip()[:1000]
+            log.append(f"Chunk {i+1} (source: {source}):\n")
+            log.append("```\n" + content + "\n```\n")
+
+        return "\n".join(log)
+
+
 # Main block for direct testing (remove or keep for utility)
 if __name__ == '__main__':
     try:
         rag_system = NetUnicornRAG()
         test_prompt = "Create a NetUnicorn script that connects to the server, selects one available node, and runs a sleep task for 10 seconds."
+        print(rag_system.log_retrieved_chunks(test_prompt))
         print(f"Testing RAG system with prompt: \"{test_prompt}\"")
         code = rag_system.generate_code(test_prompt)
         print("--- Generated Code ---")
