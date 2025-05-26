@@ -14,7 +14,8 @@ def main():
         #prompt = "Create a NetUnicorn script to run an Ookla speed test on one available node and print the results."
         prompt = "Generate a script that first creates a small text file named 'upload_test.txt' with some sample text on one node. Then, upload this file to file.io with a 1-day expiration. Print the file.io link from the result."
         print(f"Sending prompt to RAG system: \"{prompt}\"")
-        code = rag_system.generate_code(prompt)
+        # Example: save the script but do not execute it by default
+        code = rag_system.generate_code(prompt, save_script=True, execute_script=False)
         
         print("\\n--- Generated Code ---")
         print(code)
