@@ -1,0 +1,520 @@
+[
+  {
+    "url": "https://netunicorn.github.io/netunicorn/index.html",
+    "type": "documentation",
+    "content": {
+      "title": "netUnicorn - netunicorn",
+      "code_blocks": [
+        {
+          "language": "",
+          "content": "pip install netunicorn    # installs client and library"
+        }
+      ],
+      "text_content": [
+        {
+          "type": "h1",
+          "content": "netUnicorn\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "netUnicorn is a data-collection platform that simplifies expressing and realizing diverse data-collection intents over disparate network virtual (e.g., Mininet) and physical infrastructures (e.g., PINOT, SaltStack, Amazon AWS, MS Azure Container Instances, etc.)."
+        },
+        {
+          "type": "p",
+          "content": "see connectors for more details"
+        },
+        {
+          "type": "h2",
+          "content": "Motivation\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "The remarkable success of the use of machine learning-based solutions for networking problems has been impeded by the developed ML models\u2019 inability to maintain efficacy when used in different network environments exhibiting different network behaviors. This issue is commonly referred to as the generalizability problem of ML models."
+        },
+        {
+          "type": "p",
+          "content": "To address the generalizability issue, we need to simplify iterative collection of labelled, high-quality and realistic network data for a wide range of learning problems from diverse network environments. netUnicorn aims to address this problem ensuring that a researcher (or practitioner) can iteratively collect the desired network data, gradually eliminating the data-related problems to address the model generalizability issues."
+        },
+        {
+          "type": "h2",
+          "content": "Existing Approaches\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "Very few previous efforts have focused on simplifying endogenous collection of networking data. Given this lack of focus, we only have solution that are typically fragmented in the sense that each effort is custom-designed for a specific learning problem or specific network environment. These fragmented solutions are not suited to solve the model generalizability issues."
+        },
+        {
+          "type": "p",
+          "content": ""
+        },
+        {
+          "type": "h2",
+          "content": "Key Idea\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "To simplify data collection for learning problems in network, we take inspiration from the classic hourglass model, where the different learning problems comprise the top layer, the different network environments constitute the bottom layer, and netUnicorn serves as the thin waist that connects the two layers. We realize this abstraction by developing a new programming abstraction that essentially disaggregates data-collection intents or policies (i.e., answering what data to collect and from where) from mechanisms (i.e., answering how to collect the desired data on a given platform)\u2014simplifying collecting data from disparate network infrastructures."
+        },
+        {
+          "type": "p",
+          "content": "Further, netUnicorn\u2019s programming abstraction disaggregates the high-level intents into self-contained and reusable tasks\u2014simplifying collecting data for different learning problems."
+        },
+        {
+          "type": "p",
+          "content": "netUnicorn takes responsibility for compiling these high-level intents into target-specific instructions, deploying them to appropriate data-collection nodes, and executing them while handling various runtime events such as link or node failures. By doing so, netUnicorn streamlines the data collection process and ensures efficient execution in dynamic network environments."
+        },
+        {
+          "type": "h2",
+          "content": "Quick start\u00b6"
+        },
+        {
+          "type": "h3",
+          "content": "Prerequisites\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "To use the platform, administrators of the infrastructure should deploy it and provide you the next credentials:"
+        },
+        {
+          "type": "p",
+          "content": "endpoint: API url of the platform deployment"
+        },
+        {
+          "type": "p",
+          "content": "username: your username"
+        },
+        {
+          "type": "p",
+          "content": "password: your password"
+        },
+        {
+          "type": "p",
+          "content": "P.S. If you want to deploy the platform yourself, please, look at the deployment section."
+        },
+        {
+          "type": "h3",
+          "content": "Installation\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "To use the platform, install the next package:"
+        },
+        {
+          "type": "h3",
+          "content": "Start of work\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "Please, look at the examples of experiments to learn about different concepts and workflows."
+        },
+        {
+          "type": "h2",
+          "content": "Support\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "You can join netUnicorn Slack workspace for support and discussions."
+        },
+        {
+          "type": "h2",
+          "content": "Source code\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "All the code is open-source and available on GitHub."
+        }
+      ],
+      "links": [
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#netunicorn"
+        },
+        {
+          "text": "Mininet",
+          "url": "https://mininet.org/"
+        },
+        {
+          "text": "PINOT",
+          "url": "https://pinot.cs.ucsb.edu"
+        },
+        {
+          "text": "SaltStack",
+          "url": "https://saltproject.io/"
+        },
+        {
+          "text": "Amazon AWS",
+          "url": "https://aws.amazon.com/fargate/"
+        },
+        {
+          "text": "MS Azure Container Instances",
+          "url": "https://azure.microsoft.com/en-us/products/container-instances"
+        },
+        {
+          "text": "connectors",
+          "url": "https://netunicorn.github.io/netunicorn/administrator_docs/connectors.html"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#motivation"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#existing-approaches"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#key-idea"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#quick-start"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#prerequisites"
+        },
+        {
+          "text": "deployment",
+          "url": "https://netunicorn.github.io/netunicorn/administrator_docs/deployment.html"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#installation"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#start-of-work"
+        },
+        {
+          "text": "examples",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#support"
+        },
+        {
+          "text": "netUnicorn Slack workspace",
+          "url": "https://join.slack.com/t/netunicorn/shared_invite/zt-240tsalar-l1Wc3DERTlXJ6wE~DXmm9A"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/index.html#source-code"
+        },
+        {
+          "text": "GitHub",
+          "url": "https://github.com/netunicorn"
+        }
+      ]
+    }
+  },
+  {
+    "url": "https://netunicorn.github.io/netunicorn/examples.html",
+    "type": "examples",
+    "content": {
+      "title": "Experiment examples - netunicorn",
+      "code_blocks": [
+        {
+          "language": "",
+          "content": "export NETUNICORN_ENDPOINT=http://localhost:26611\nexport NETUNICORN_LOGIN=test\nexport NETUNICORN_PASSWORD=test"
+        }
+      ],
+      "text_content": [
+        {
+          "type": "h1",
+          "content": "Experiment examples\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "Here we will present several examples of using netunicorn platform for network-oriented data collection purposes, including experiment descriptions and links to the code."
+        },
+        {
+          "type": "h2",
+          "content": "Deployment of netunicorn\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "For all these experiments, we assume that you have access to netunicorn deployment operating within some infrastructure. If yes, skip this section and proceed to the next one."
+        },
+        {
+          "type": "p",
+          "content": "If this is not the case and you want to explore these experiments on your own, we suggest to easily deploy your own test copy of netunicorn based on Docker compose file. For further details, see Deployment guide, section \u201cSimplified deployment\u201d."
+        },
+        {
+          "type": "h2",
+          "content": "Preparation\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "You should have the following information to interact with netunicorn platform:"
+        },
+        {
+          "type": "p",
+          "content": "NETUNICORN_ENDPOINT: URL of netunicorn API endpoint. Provided by installation administrator. If you use local installation deployed from docker-compose.yml file, it would be the endpoint of mediator service in docker-compose.yml file (by default: http://localhost:26611)"
+        },
+        {
+          "type": "p",
+          "content": "NETUNICORN_LOGIN: login of your user account. Provided by installation administrator. If you use local installation deployed from docker-compose.yml file, it would be test (you can change it in development/users.sql file before running docker compose)."
+        },
+        {
+          "type": "p",
+          "content": "NETUNICORN_PASSWORD: password of your user account. Provided by installation administrator. If you use local installation deployed from docker-compose.yml file, it would be test (provided as bcrypt2-hashed value in development/users.sql file)."
+        },
+        {
+          "type": "p",
+          "content": "We propose to store these values in environment variables for convenience. For example, for local installation, you can run the following commands in the same terminal session where you will use netunicorn client or run jupyter-notebook:"
+        },
+        {
+          "type": "p",
+          "content": "All experiments are implemented as Jupyter notebooks. You can find them in examples folder of netunicorn repository."
+        },
+        {
+          "type": "h2",
+          "content": "Basic Sleep Experiment\u00b6"
+        },
+        {
+          "type": "h3",
+          "content": "Goal\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "Verify the basic functionality of netunicorn platform and check the correctness of the data collection process."
+        },
+        {
+          "type": "h3",
+          "content": "Experiment Design\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "This experiment verifies if netunicorn installation is working correctly and accessible by the user. Specifically, it:"
+        },
+        {
+          "type": "p",
+          "content": "Verifies installation of needed Python packages, connection to netunicorn API endpoint and user authentication."
+        },
+        {
+          "type": "p",
+          "content": "Describes how to create a simple pipeline consisting of several sleep tasks."
+        },
+        {
+          "type": "p",
+          "content": "Describes how to use nodes objects to get information about the nodes in the infrastructure."
+        },
+        {
+          "type": "p",
+          "content": "Leads through the process of running the experiment and obtaining the results."
+        },
+        {
+          "type": "h3",
+          "content": "Result\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "As a result, you should be able to learn the basics of netunicorn platform and run your first experiment."
+        },
+        {
+          "type": "h3",
+          "content": "Jupyter Notebook\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "https://github.com/netunicorn/netunicorn/blob/main/examples/basic_example.ipynb"
+        },
+        {
+          "type": "h2",
+          "content": "Speed Test Experiment\u00b6"
+        },
+        {
+          "type": "h3",
+          "content": "Goal\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "Collect network performance metrics from multiple nodes in the infrastructure using speed-test utility and store the resulting PCAP files for future analysis."
+        },
+        {
+          "type": "h3",
+          "content": "Experiment Flow\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "This experiment shows an example of real-world data collection from a complex infrastructure. In particular, it:"
+        },
+        {
+          "type": "p",
+          "content": "Starts the network traffic capturing on the experiment nodes."
+        },
+        {
+          "type": "p",
+          "content": "Execute Ookla Speed Test on these nodes"
+        },
+        {
+          "type": "p",
+          "content": "Saves the resulting traffic and uploads it to the cloud storage."
+        },
+        {
+          "type": "p",
+          "content": "Demonstrates the result of execution, how to parse and read them."
+        },
+        {
+          "type": "h3",
+          "content": "Result\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "As a result, you should have results of speed-test measurements and corresponding PCAP files for future analysis using your favorite tools and methods."
+        },
+        {
+          "type": "h3",
+          "content": "Jupyter Notebook\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "https://github.com/netunicorn/netunicorn/blob/main/examples/speed_test_example.ipynb"
+        },
+        {
+          "type": "h2",
+          "content": "Video Data Collection Experiment\u00b6"
+        },
+        {
+          "type": "h3",
+          "content": "Goal\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "In this experiment, we will watch videos from various platforms and record the corresponding network traffic for future analysis."
+        },
+        {
+          "type": "h3",
+          "content": "Experiment Flow\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "This example shows how nodes could interact with various video streaming platforms, in particular YouTube, Vimeo, and Twitch. We will watch videos (or streams) from them and record the network traffic. Specifically, this experiment:"
+        },
+        {
+          "type": "p",
+          "content": "Creates the pipeline with watching YouTube, Vimeo, and Twitch, while recording network traffic."
+        },
+        {
+          "type": "p",
+          "content": "Demonstrates the principle of environment_definition object, how environment preparation commands are stored inside, and how to use your own Docker image for the experiment."
+        },
+        {
+          "type": "p",
+          "content": "Executes the pipeline on the nodes from an infrastructure and uploads the resulting data to cloud data storage platform."
+        },
+        {
+          "type": "h3",
+          "content": "Result\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "As a result, you should have YouTube, Vimeo, and Twitch video streaming network recording that you can later analyse and explore."
+        },
+        {
+          "type": "h3",
+          "content": "Jupyter Notebook\u00b6"
+        },
+        {
+          "type": "p",
+          "content": "https://github.com/netunicorn/netunicorn/blob/main/examples/video_watchers_example.ipynb"
+        }
+      ],
+      "links": [
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#experiment-examples"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#deployment-of-netunicorn"
+        },
+        {
+          "text": "Deployment",
+          "url": "https://netunicorn.github.io/netunicorn/administrator_docs/deployment.html"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#preparation"
+        },
+        {
+          "text": "examples",
+          "url": "https://github.com/netunicorn/netunicorn/tree/main/examples"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#basic-sleep-experiment"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#goal"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#experiment-design"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#result"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#jupyter-notebook"
+        },
+        {
+          "text": "https://github.com/netunicorn/netunicorn/blob/main/examples/basic_example.ipynb",
+          "url": "https://github.com/netunicorn/netunicorn/blob/main/examples/basic_example.ipynb"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#speed-test-experiment"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#id1"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#experiment-flow"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#id2"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#id3"
+        },
+        {
+          "text": "https://github.com/netunicorn/netunicorn/blob/main/examples/speed_test_example.ipynb",
+          "url": "https://github.com/netunicorn/netunicorn/blob/main/examples/speed_test_example.ipynb"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#video-data-collection-experiment"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#id4"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#id5"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#id6"
+        },
+        {
+          "text": "\u00b6",
+          "url": "https://netunicorn.github.io/netunicorn/examples.html#id7"
+        },
+        {
+          "text": "https://github.com/netunicorn/netunicorn/blob/main/examples/video_watchers_example.ipynb",
+          "url": "https://github.com/netunicorn/netunicorn/blob/main/examples/video_watchers_example.ipynb"
+        }
+      ]
+    }
+  }
+]
