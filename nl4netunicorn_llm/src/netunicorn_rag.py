@@ -169,8 +169,8 @@ class NetUnicornRAG:
         11. **Pythonic Code**: Write clean, readable, and pythonic code.
         Remember to use the specific method `experiment.map(pipeline, nodes)` AFTER `experiment = Experiment()` and `experiment.environment_definition = ShellExecution()` (or other definition).
         Do NOT use `client.create_experiment()`. Use `client.prepare_experiment(experiment_object, experiment_name_string)`.
-        Do NOT use `experiment.wait_for_status()`, `experiment.start_execution()`, or `experiment.get_result()`. Use `client.get_experiment_status()`, `client.start_execution()`, and `client.wait_for_experiment()` or polling on `client.get_experiment_status()`.
-        The `client.wait_for_experiment(experiment_name)` method is a blocking call that waits until the experiment is finished. It can be used instead of manual polling for FINISHED, but polling provides more feedback. For robustness, the polling loop for FINISHED is preferred.
+        Do NOT use `experiment.wait_for_status()`, `experiment.start_execution()`, or `experiment.get_result()`. Use `client.get_experiment_status()` for polling and `client.start_execution()` to start the experiment.
+        Polling `client.get_experiment_status()` is the preferred way to check if an experiment is READY and then if it has FINISHED. This provides more feedback during execution.
         Pay close attention to the full lifecycle: cleanup -> prepare -> poll for READY -> start -> poll for FINISHED -> process results.
         Make sure the experiment name is unique, potentially by adding a timestamp or a UUID to `experiment_name = "my_experiment_..."`.
         The experiment object should be passed to `client.prepare_experiment`, not the pipeline and nodes directly.
