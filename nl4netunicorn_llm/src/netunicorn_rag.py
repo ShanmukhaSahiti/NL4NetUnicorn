@@ -102,7 +102,7 @@ class NetUnicornRAG:
             *   Define an `environment_definition`. For simple shell commands or Python tasks that don't need special docker images, use `ShellExecution()`: `experiment.environment_definition = ShellExecution()`
             *   Map the pipeline to nodes using the experiment object: `experiment.map(pipeline, working_nodes)`
         7.  **Experiment Naming and Cleanup**:
-            *   Use a unique string for the experiment name, for example, `experiment_name = "nl4netunicorn_experiment_{{timestamp}}"`. A timestamp or UUID is good.
+            *   Use a unique string for the experiment name, for example, `experiment_name = "nl4netunicorn_experiment_timestamp"`, where timestamp is generated using the python time package.
             *   Before preparing, attempt to delete any pre-existing experiment with the same name:
                 ```python
                 try:
@@ -124,10 +124,6 @@ class NetUnicornRAG:
                     if status == ExperimentStatus.READY:
                         print("Experiment is READY.")
                         break
-                    elif status == ExperimentStatus.FINISHED or status == ExperimentStatus.ERROR:
-                        print(f"Experiment entered {{status}} state before becoming READY. Aborting.")
-                        # Consider exiting or raising an error
-                        exit() # Or handle error appropriately
                     time.sleep(10) # Poll every 10 seconds
                 ```
             *   Start the experiment execution: `client.start_execution(experiment_name)`
@@ -137,27 +133,30 @@ class NetUnicornRAG:
                 while True:
                     status = client.get_experiment_status(experiment_name).status
                     print(f"Current status: {{status}}")
-                    if status == ExperimentStatus.FINISHED:
-                        print("Experiment FINISHED.")
+                    if status != ExperimentStatus.RUNNING:
                         break
-                    elif status == ExperimentStatus.ERROR:
-                        print(f"Experiment entered ERROR state. Aborting wait. Check logs.")
-                        break # Exit loop on error
                     time.sleep(20) # Poll every 20 seconds
                 ```
             *   Retrieve and print results if FINISHED:
                 ```python
+                from returns.pipeline import is_successful
+                from returns.result import Result
                 final_status_info = client.get_experiment_status(experiment_name)
                 if final_status_info.status == ExperimentStatus.FINISHED:
                     results = final_status_info.execution_result
                     print(f"Experiment results: {{results}}")
                     if results:
-                        for report_list in results:
-                            for report in report_list:
-                                if report: # Report can be None if a node fails
-                                    print(f"Node: {{report.node.name}}, Success: {{report.success}}, Log: {{report.log}}")
-                                    if not report.success:
-                                        print(f"Error details: {{report.error}}")
+                        for report in results:
+                            print(f"Node name: {{report.node.name}}")
+                            print(f"Error: {{report.error}}")
+
+                            result, log = report.result  # report stores results of execution and corresponding log
+                            
+                            # result is a returns.result.Result object, could be Success of Failure
+                            print(type(result))
+                            if isinstance(result, Result):
+                                data = result.unwrap() if is_successful(result) else result
+                                pprint(data)
                 else:
                     print(f"Experiment did not finish successfully. Final status: {{final_status_info.status}}")
                     if final_status_info.error:
@@ -265,7 +264,7 @@ class NetUnicornRAG:
     # Log retrieved chunks that model finds most relevant
     def log_retrieved_chunks(self, user_prompt: str, k: int = 3) -> str:
         retriever = self.vector_store.as_retriever()
-        retrieved_docs = retriever.get_relevant_documents(user_prompt)
+        retrieved_docs = retriever.invoke(user_prompt)
         log = [f"Retrieved Context Chunks for: \"{user_prompt}\"\n"]
 
         for i, doc in enumerate(retrieved_docs[:k]):
