@@ -54,3 +54,5 @@ htmlcov/
 netu/
 nl4netunicorn_llm/.env.template
 netunicorn-library-main/
+nl4netunicorn_llm/generated_scripts/
+evaluation_reports/
