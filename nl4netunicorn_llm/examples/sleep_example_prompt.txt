@@ -1,0 +1,1 @@
+Generate a NetUnicorn script that selects two available nodes and makes each of them sleep for 15 seconds. Then, print the results.

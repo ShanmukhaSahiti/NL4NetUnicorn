@@ -2,39 +2,35 @@ import re
 from nl4netunicorn_llm.src.netunicorn_rag import NetUnicornRAG
 from datetime import datetime
 import os
+import argparse
 
-PROMPT_FILE = "nl4netunicorn_llm/examples/example_prompts.txt"
 OUTPUT_DIR = "evaluation_reports"
 
-def parse_prompts(file_path: str) -> list[tuple[str, str]]:
+def parse_prompts(file_path: str) -> list[str]:
     """
-    Parses a prompt text file into a list of (label, prompt) pairs.
-    Expected format:
-    1. Section Name:
-       - "prompt goes here"
+    Parses a plain text file where each line is a prompt.
+    Returns a list of prompt strings.
     """
     prompts = []
     with open(file_path, "r") as f:
-        raw = f.read()
-
-    sections = re.findall(r'(\d+)\.\s+(.+?):\s+-\s+"([^"]+)"', raw)
-    for num, label, prompt in sections:
-        prompts.append((f"{num}. {label.strip()}", prompt.strip()))
+        for line in f:
+            line = line.strip()
+            if line:  # Skip empty lines
+                prompts.append(line)
     return prompts
 
-def evaluate_rag(rag: NetUnicornRAG, labeled_prompts: list[tuple[str, str]], out_path: str):
+
+def evaluate_rag(rag: NetUnicornRAG, prompts: list[str], out_path: str):
     with open(out_path, "w") as f:
         f.write(f"# NetUnicorn RAG Evaluation Report\n")
         f.write(f"Generated: {datetime.now().isoformat()}\n\n")
 
-        for label, prompt in labeled_prompts:
-            f.write(f"## {label}\n")
+        for prompt in prompts:
             f.write(f"Prompt: {prompt}\n\n")
         
             f.write("### Retrieved Context:\n")
             chunk_log = rag.log_retrieved_chunks(prompt, k=3)
             f.write(chunk_log + "\n")
-
 
             # Generate code
             try:
@@ -50,6 +46,12 @@ if __name__ == "__main__":
     rag = NetUnicornRAG()
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     out_file = f"{OUTPUT_DIR}/rag_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
-    labeled_prompts = parse_prompts(PROMPT_FILE)
+
+    parser = argparse.ArgumentParser(description='Generating and Evaluating LLM-Generated Scripts')
+    parser.add_argument('-i', '--input', dest='file', help='Prompts File: Each prompt should be in a new line', type=str, required=True)
+
+    args = parser.parse_args()
+    input_file = args.file
+    labeled_prompts = parse_prompts(input_file)
     evaluate_rag(rag, labeled_prompts, out_file)
     print(f"Evaluation saved to: {out_file}")
