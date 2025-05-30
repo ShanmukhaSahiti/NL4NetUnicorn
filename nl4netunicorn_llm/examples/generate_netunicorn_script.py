@@ -1,18 +1,15 @@
 # nl4netunicorn_llm/examples/generate_netunicorn_script.py
 import sys
 import os
-import logging # For seeing logs from RAG system
+import logging 
 
-# Ensure the nl4netunicorn_llm module can be found
-# This adjusts the Python path to include the project root if the script is run from the examples directory.
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(os.path.dirname(current_dir)) # Assuming examples is one level down from src, and src is one level from project root
+project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from nl4netunicorn_llm.src.netunicorn_rag import NetUnicornRAG
 
-# Setup basic logging for the example script itself to see RAG logs
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -61,19 +58,7 @@ def main():
         )
         print_results(results1)
 
-        # Test Case 2: Simulating "generate and run once" by setting max_retries=0
-        logger.info("\n--- Example 2: Simulating Generate and Run Once (max_retries=0) ---")
-        prompt2 = "Create a NetUnicorn script that tries to import a non_existent_module and then runs a sleep task for 5 seconds."
-        logger.info(f"Sending prompt to RAG system: \"{prompt2}\"")
-        results2 = rag_system.generate_code(
-            user_prompt=prompt2,
-            save_final_script=True,
-            enable_feedback_loop=True, 
-            max_retries=0 
-        )
-        print_results(results2)
-
-        # Test Case 3: Generation only (no execution, no feedback beyond initial generation)
+        # Test Case 2: Generation only (no execution, no feedback beyond initial generation)
         logger.info("\n--- Example 3: Generation Only (No Execution, No Retries) ---")
         prompt3 = "Generate a NetUnicorn pipeline with a single SleepTask(10), ensuring all imports like RemoteClient, Pipeline, and SleepTask are present."
         logger.info(f"Sending prompt to RAG system: \"{prompt3}\"")
@@ -86,7 +71,7 @@ def main():
         if results3.get('final_script_path') is not None:
             logger.error(f"Test Case 3 Error: Final script path was {results3.get('final_script_path')} but should be None when save_final_script is False.")
         
-        # Test Case 4: Prompt for ShellCommand (expect success now)
+        # Test Case 4: Prompt for ShellCommand
         logger.info("\n--- Example 4: Prompt for ShellCommand (expect success) ---")
         prompt4 = "Create a NetUnicorn script that runs a shell command 'echo Hello from ShellCommand'. Use ShellCommand from basic tasks."
         logger.info(f"Sending prompt to RAG system: \"{prompt4}\"")
