@@ -44,6 +44,74 @@ def print_results(result_dict):
             logger.info("    Execution Result: Not available (Code may not have been run due to prior error or configuration)")
     logger.info("-------------------------------------------")
 
-# Example usage (if kept as a library, otherwise this comment is moot)
-# if __name__ == "__main__":
-#     main() # Or however it's intended to be run. 
+def main():
+    try:
+        logger.info("Initializing NetUnicornRAG system...")
+        rag_system = NetUnicornRAG()
+        
+        # Test Case 1: Feedback loop with default retries (3)
+        logger.info("\n--- Example 1: Generating with Feedback Loop (default max_retries=3) ---")
+        prompt1 = "Create a NetUnicorn script that connects to the server, selects one available node, and runs a sleep task for 10 seconds. Ensure all results are printed."
+        logger.info(f"Sending prompt to RAG system: \"{prompt1}\"")
+        results1 = rag_system.generate_code(
+            user_prompt=prompt1,
+            save_final_script=True,
+            enable_feedback_loop=True # This is the default for generate_code, but explicit for clarity
+            # max_retries will use the default of 3 from NetUnicornRAG
+        )
+        print_results(results1)
+
+        # Test Case 2: Simulating "generate and run once" by setting max_retries=0
+        logger.info("\n--- Example 2: Simulating Generate and Run Once (max_retries=0) ---")
+        prompt2 = "Create a NetUnicorn script that tries to import a non_existent_module and then runs a sleep task for 5 seconds."
+        logger.info(f"Sending prompt to RAG system: \"{prompt2}\"")
+        results2 = rag_system.generate_code(
+            user_prompt=prompt2,
+            save_final_script=True,
+            enable_feedback_loop=True, 
+            max_retries=0 
+        )
+        print_results(results2)
+
+        # Test Case 3: Generation only (no execution, no feedback beyond initial generation)
+        logger.info("\n--- Example 3: Generation Only (No Execution, No Retries) ---")
+        prompt3 = "Generate a NetUnicorn pipeline with a single SleepTask(10), ensuring all imports like RemoteClient, Pipeline, and SleepTask are present."
+        logger.info(f"Sending prompt to RAG system: \"{prompt3}\"")
+        results3 = rag_system.generate_code(
+            user_prompt=prompt3,
+            save_final_script=False, 
+            enable_feedback_loop=False 
+        )
+        print_results(results3)
+        if results3.get('final_script_path') is not None:
+            logger.error(f"Test Case 3 Error: Final script path was {results3.get('final_script_path')} but should be None when save_final_script is False.")
+        
+        # Test Case 4: Prompt for ShellCommand (expect success now)
+        logger.info("\n--- Example 4: Prompt for ShellCommand (expect success) ---")
+        prompt4 = "Create a NetUnicorn script that runs a shell command 'echo Hello from ShellCommand'. Use ShellCommand from basic tasks."
+        logger.info(f"Sending prompt to RAG system: \"{prompt4}\"")
+        results4 = rag_system.generate_code(
+            user_prompt=prompt4,
+            save_final_script=True,
+            enable_feedback_loop=True,
+            max_retries=2 
+        )
+        print_results(results4)
+
+        logger.info("\n--- Example Script Finished ---")
+
+    except FileNotFoundError as e:
+        logger.error(f"ERROR: A required file was not found. {e}. Please ensure your .env file (in project root) and documentation JSON (e.g., nl4netunicorn_llm/data/netunicorn_docs.json) exist and paths are correct.")
+        import traceback
+        traceback.print_exc()
+    except ValueError as e:
+        logger.error(f"Configuration Error: {e}")
+        import traceback
+        traceback.print_exc()
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+        import traceback
+        traceback.print_exc()
+
+if __name__ == '__main__':
+    main() 
