@@ -1,21 +1,208 @@
 import os
 import json
-import datetime # Added for timestamp in filename
+import datetime
+import logging 
+import sys 
+import traceback 
 from dotenv import load_dotenv
+from typing import Dict, Any 
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.documents import Document
 
-GENERATED_SCRIPTS_DIR = "nl4netunicorn_llm/generated_scripts"
+from .script_executor import ScriptExecutor
+from .feedback_handler import FeedbackHandler
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+GENERATED_SCRIPTS_DIR = "nl4netunicorn_llm/generated_scripts" 
+FEEDBACK_ATTEMPTS_DIR = "nl4netunicorn_llm/generated_scripts/feedback_attempts"
+
+
+_INITIAL_SYSTEM_PROMPT_TEMPLATE = """
+You are an expert Python programmer specializing in the NetUnicorn library.
+Your task is to generate a complete, runnable NetUnicorn Python script based on the user's request and relevant NetUnicorn documentation context provided.
+The script should interact with a NetUnicorn server using the provided credentials.
+
+Context: {context}
+User's request: {input}
+
+Please generate the Python script adhering to the following guidelines:
+1.  **Imports**: Ensure all necessary imports are at the top. This typically includes:
+    - `import os` (if using environment variables for credentials, though they are injected here)
+    - `import time`
+    - `from pprint import pprint` (for readable result printing)
+    - `from netunicorn.client.remote import RemoteClient, RemoteClientException`
+    - `from netunicorn.base.experiment import Experiment, ExperimentStatus`
+    - `from netunicorn.base.pipeline import Pipeline`
+    - Specific task classes from `netunicorn.library.tasks.*` (e.g., `from netunicorn.library.tasks.basic import SleepTask`)
+    - `from netunicorn.base.environment_definitions import ShellExecution` (or other environment definitions if needed)
+    - `from returns.pipeline import is_successful`
+    - `from returns.result import Result`
+2.  **Credentials**: The script will use NetUnicorn credentials provided as Python variables (endpoint, login, password). Your generated code should use these directly.
+    Your first lines of code in the script, after imports, should define these credentials like so, using the exact values provided to you:
+    `NETUNICORN_ENDPOINT = "{endpoint}"`  # Actual endpoint value will be provided here
+    `NETUNICORN_LOGIN = "{login}"`    # Actual login value will be provided here
+    `NETUNICORN_PASSWORD = "{password}"` # Actual password value will be provided here
+    Then, use these variables (`NETUNICORN_ENDPOINT`, `NETUNICORN_LOGIN`, `NETUNICORN_PASSWORD`) when initializing the `RemoteClient`.
+    For example:
+    `client = RemoteClient(endpoint=NETUNICORN_ENDPOINT, login=NETUNICORN_LOGIN, password=NETUNICORN_PASSWORD)`
+3.  **Client Initialization**: Create a `RemoteClient` instance using the credentials: 
+    `client = RemoteClient(endpoint=NETUNICORN_ENDPOINT, login=NETUNICORN_LOGIN, password=NETUNICORN_PASSWORD)`
+    Optionally, you can include a health check: `print(f"Client Healthcheck: {{client.healthcheck()}}")`
+4.  **Pipeline Creation**: Instantiate `pipeline = Pipeline()`. Add tasks using `pipeline.then(...)`. For example, `pipeline.then(SleepTask(10))`.
+5.  **Node Selection**:
+    *   Get all available nodes: `node_pool = client.get_nodes()`.
+    *   Print available nodes for debugging if useful: `print(f"Available nodes: {{node_pool}}")`.
+    *   Select working nodes. If specific filtering is requested, use `node_pool.filter(...)`. Otherwise, a common approach is `working_nodes = node_pool.take(1)`.
+    *   **Crucially**: Check if `working_nodes` is empty. If so, print an informative message and exit, as an experiment cannot run on zero nodes.
+        ```python
+        if not working_nodes:
+            print("No suitable working nodes found after filtering or take(1). Exiting.")
+            exit()
+        print(f"Selected working nodes: {{working_nodes}}")
+        ```
+6.  **Experiment Object and Definition**:
+    *   Create an `Experiment` object and map the pipeline: `experiment = Experiment().map(pipeline, working_nodes)`.
+    *   Set the environment definition, typically: `experiment.environment_definition = ShellExecution()` for general tasks.
+7.  **Experiment Naming and Cleanup**:
+    *   Define a unique `experiment_name`, e.g., by including a timestamp: `experiment_name = f"nl4nu_exp_{{time.strftime('%Y%m%d%H%M%S')}}"`.
+    *   **Important**: Before preparing, attempt to delete any pre-existing experiment with the same name using the exact pattern below:
+        ```python
+        try:
+            client.delete_experiment(experiment_name)
+            print(f"Successfully deleted pre-existing experiment: {{experiment_name}}")
+        except RemoteClientException:
+            print(f"Info: Experiment '{{experiment_name}}' not found or couldn't be deleted (may not exist, this is not an error).")
+        except Exception as e: # Catch other potential errors during deletion
+            print(f"Warning: An unexpected error during experiment deletion for '{{experiment_name}}': {{e}}")
+        ```
+8.  **Experiment Lifecycle & Results**:
+    *   **Prepare**: `client.prepare_experiment(experiment, experiment_name)`.
+    *   **Poll for READY**: Loop, get `status_info = client.get_experiment_status(experiment_name)`, print `status_info.status`, and break when `status_info.status == ExperimentStatus.READY`. Use `time.sleep(SOME_SECONDS)` in the loop.
+    *   Optionally, after READY, you can print deployment status: `prepared_exp = status_info.experiment; for dep in prepared_exp: print(f"Node: {{dep.node}}, Prepared: {{dep.prepared}}, Error: {{dep.error}}")`
+    *   **Start Execution**: `client.start_execution(experiment_name)`.
+    *   **Poll for FINISHED/Completion**: Loop, get `status_info = client.get_experiment_status(experiment_name)`, print `status_info.status`, and break when `status_info.status != ExperimentStatus.RUNNING`. Use `time.sleep(SOME_SECONDS)`.
+    *   **Result Retrieval and Processing**: After polling indicates completion, get `final_status_info = client.get_experiment_status(experiment_name)`.
+        Print overall status: `print(f"Final experiment status: {{final_status_info.status}}")`
+        If `final_status_info.status == ExperimentStatus.FINISHED` and `final_status_info.execution_result`:
+            print("Experiment Finished Successfully. Processing results:")
+            # final_status_info.execution_result is a list of DeploymentExecutionResult objects
+            for report in final_status_info.execution_result:
+                print(f"--- Report for Node: {{report.node.name}} ---") # CRITICAL: Use report.node.name
+                print(f"  Error (if any): {{report.error}}")
+                actual_result_value, log_list = report.result # report.result is a tuple (value, list_of_log_strings)
+                print(f"  Actual Result Type: {{type(actual_result_value)}}")
+                if isinstance(actual_result_value, Result):
+                    processed_value = actual_result_value.unwrap() if is_successful(actual_result_value) else actual_result_value.failure()
+                    print(f"  Processed Result (from returns.Result):")
+                    pprint.pprint(processed_value)
+                else:
+                    print(f"  Result (raw):")
+                    pprint.pprint(actual_result_value)
+                print(f"  Logs:")
+                if log_list:
+                    for log_entry in log_list:
+                        print(f"    {{log_entry.strip()}}") # Iterate and print each log string
+                else:
+                    print("    (No logs reported for this task)")
+                print("--- End Report ---")
+        elif `final_status_info.status != ExperimentStatus.FINISHED`:
+            print(f"Experiment did not finish successfully. Final status: {{final_status_info.status}}")
+            if final_status_info.error:
+                 print(f"Error details from final_status_info: {{final_status_info.error}}")
+        else: # Status is FINISHED but no execution_result, or other conditions
+            print(f"Experiment status is {{final_status_info.status}} but no execution results found or an issue occurred.")
+9.  **Output Format**: Generate ONLY the Python code block. No explanatory text before or after.
+10. **Pythonic Code**: Clean, readable, PEP8-compliant code.
+
+Key script structure:
+```python
+# Imports (os, time, pprint, RemoteClient, RemoteClientException, Experiment, ExperimentStatus, Pipeline, specific tasks, ShellExecution, is_successful, Result)
+# Credentials (will be defined in the script scope, use NETUNICORN_ENDPOINT, NETUNICORN_LOGIN, NETUNICORN_PASSWORD)
+# Client Initialization (client = RemoteClient(...), client.healthcheck())
+# Pipeline Definition (pipeline = Pipeline().then(...))
+# Node Selection (client.get_nodes(), node_pool.take(1), check if working_nodes is empty, print selections)
+# Experiment Creation (experiment = Experiment().map(...), experiment.environment_definition = ...)
+# Experiment Naming (experiment_name = f"..._{{time.strftime(...)}}")
+# Experiment Cleanup (try/except RemoteClientException for client.delete_experiment)
+# Prepare Experiment (client.prepare_experiment)
+# Poll for READY (while loop, client.get_experiment_status, check .status == ExperimentStatus.READY, time.sleep)
+# Optional: Print deployment status from status_info.experiment
+# Start Execution (client.start_execution)
+# Poll for Completion (while loop, client.get_experiment_status, check .status != ExperimentStatus.RUNNING, time.sleep)
+# Process Results (get final_status_info, check .status, iterate .execution_result, use report.node.name, unpack report.result, handle returns.Result with is_successful/unwrap/failure, print logs from log_list)
+```
+The user request is: {input}
+Generate the full Python script now.
+"""
+
+_RETRY_SYSTEM_PROMPT_TEMPLATE = """
+You are an expert Python programmer specializing in the NetUnicorn library.
+Your task is to correct a previously generated NetUnicorn Python script based on execution feedback.
+The original user request was: {original_request}
+The relevant documentation context (if any was used for the previous attempt) is:
+<context>
+{context}
+</context>
+
+The PREVIOUSLY generated script was:
+```python
+{previous_code}
+```
+
+When this script was executed, it produced the following output:
+STDOUT:
+```text
+{execution_stdout}
+```
+STDERR:
+```text
+{execution_stderr}
+```
+
+Analyze the STDERR for errors. If no errors, analyze STDOUT to see if the script achieved the user's goal based on the original request.
+If there are errors in STDERR or the STDOUT does not indicate success:
+1. Identify the cause of the error or failure.
+2. Generate a new, complete, and runnable Python script that fixes the identified issues.
+3. Ensure the corrected script still adheres to all best practices for NetUnicorn as outlined below and in the initial prompt style.
+4. Pay close attention to the specific error messages in STDERR.
+5. **Experiment Naming**: If you regenerate the experiment naming part, ensure it remains unique, ideally by using a timestamp: `experiment_name = f"nl4nu_exp_{{time.strftime('%Y%m%d%H%M%S')}}"`.
+6. **Result Processing Details**: If modifying result processing, strictly follow this pattern:
+   - `final_status_info.execution_result` is a list of reports. Iterate over it directly (e.g., `for report in final_status_info.execution_result:`).
+   - Node name is `report.node.name`.
+   - Task result and logs are in `report.result` which is a tuple: `actual_result_value, log_list = report.result`.
+   - If `actual_result_value` is a `returns.result.Result` object, use `is_successful(actual_result_value)` and then `actual_result_value.unwrap()` or `actual_result_value.failure()`.
+   - Print logs by iterating through `log_list`.
+   - Ensure `pprint`, `Result`, `is_successful` and all other necessary NetUnicorn classes are imported at the top of the script.
+7. **Experiment Cleanup**: Ensure the experiment cleanup uses `try...except RemoteClientException: print(...)` specifically for `client.delete_experiment`.
+8.  **Credentials**: Ensure the corrected script defines and uses the NetUnicorn credentials at the top, like so, using the exact values provided:
+    `NETUNICORN_ENDPOINT = "{endpoint}"`  # Actual endpoint value will be provided here
+    `NETUNICORN_LOGIN = "{login}"`    # Actual login value will be provided here
+    `NETUNICORN_PASSWORD = "{password}"` # Actual password value will be provided here
+    Then, use these variables for the `RemoteClient`.
+    For example:
+    `client = RemoteClient(endpoint=NETUNICORN_ENDPOINT, login=NETUNICORN_LOGIN, password=NETUNICORN_PASSWORD)`
+
+If STDOUT indicates success and STDERR is empty or non-critical, and you believe the script fulfilled the original request, you can either:
+    a) State that the previous code was correct by responding with "PREVIOUS_CODE_CORRECT".
+    b) Re-generate the *exact same script* if you are highly confident.
+
+Generate ONLY the Python code block for the corrected script. Do not include any explanatory text before or after the code block.
+If you believe the previous code was correct and no changes are needed, respond with the special string "PREVIOUS_CODE_CORRECT" instead of a script.
+
+Corrected Python script or "PREVIOUS_CODE_CORRECT":
+"""
 
 class NetUnicornRAG:
-    def __init__(self, docs_path="nl4netunicorn_llm/data/netunicorn_docs.json"):
-        load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env")) # Look for .env in project root
+    def __init__(self, docs_path="nl4netunicorn_llm/data/netunicorn_docs.json", generated_scripts_dir=None):
+        load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         if not self.openai_api_key:
@@ -25,39 +212,40 @@ class NetUnicornRAG:
         self.netunicorn_login = os.getenv("NETUNICORN_LOGIN")
         self.netunicorn_password = os.getenv("NETUNICORN_PASSWORD")
         if not all([self.netunicorn_endpoint, self.netunicorn_login, self.netunicorn_password]):
-            raise ValueError("NetUnicorn credentials not found in environment variables. Ensure .env is in the project root.")
+            raise ValueError("NetUnicorn credentials not found. Ensure .env is in the project root.")
 
-        # Create directory for generated scripts if it doesn't exist
-        # Make GENERATED_SCRIPTS_DIR relative to the project root
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        self.generated_scripts_path = os.path.join(project_root, GENERATED_SCRIPTS_DIR)
+        
+        self.generated_scripts_base_path = os.path.join(project_root, generated_scripts_dir or GENERATED_SCRIPTS_DIR)
+        self.feedback_attempts_path = os.path.join(project_root, FEEDBACK_ATTEMPTS_DIR)
 
-        if not os.path.exists(self.generated_scripts_path):
-            os.makedirs(self.generated_scripts_path)
-            print(f"Created directory: {self.generated_scripts_path}")
+        os.makedirs(self.generated_scripts_base_path, exist_ok=True)
+        os.makedirs(self.feedback_attempts_path, exist_ok=True)
+        
+        logging.info(f"Generated scripts will be saved in: {self.generated_scripts_base_path}")
+        logging.info(f"Feedback attempt scripts will be saved in: {self.feedback_attempts_path}")
 
-
-        self.llm = ChatOpenAI(openai_api_key=self.openai_api_key, model_name="gpt-3.5-turbo", temperature=0)
+        self.llm = ChatOpenAI(openai_api_key=self.openai_api_key, model_name="gpt-3.5-turbo", temperature=0.0)
         self.embeddings = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
 
-        # Adjust docs_path to be relative to project root if it's a relative path
-        if not os.path.isabs(docs_path) and not docs_path.startswith("nl4netunicorn_llm/"):
-             # Assuming docs_path like "data/netunicorn_docs.json" is relative to nl4netunicorn_llm
-            docs_path = os.path.join(project_root, "nl4netunicorn_llm", docs_path)
-        elif not os.path.isabs(docs_path) and docs_path.startswith("nl4netunicorn_llm/"):
-            docs_path = os.path.join(project_root, docs_path)
-
-
+        if not os.path.isabs(docs_path):
+            docs_path = os.path.join(project_root, docs_path if docs_path.startswith("nl4netunicorn_llm/") else os.path.join("nl4netunicorn_llm", docs_path))
+        
         self.docs = self._load_documents(docs_path)
         self.vector_store = self._create_vector_store(self.docs)
-        self.rag_chain = self._setup_rag_chain()
+        
+        self.initial_rag_chain = self._setup_initial_rag_chain()
+        self.feedback_rag_chain = self._setup_feedback_rag_chain()
+        
+        self.script_executor = ScriptExecutor()
 
     def _load_documents(self, path: str) -> list[Document]:
         try:
-            with open(path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
         except FileNotFoundError:
-            raise FileNotFoundError(f"Doc file not found: {path}. Please ensure it's correctly placed, e.g., nl4netunicorn_llm/data/netunicorn_docs.json relative to project root.")
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            raise FileNotFoundError(f"Doc file not found: {path}. Project root: {project_root}")
         except json.JSONDecodeError:
             raise ValueError(f"Error decoding JSON: {path}")
         return [Document(page_content=item['content'], metadata={"source": item['source']}) for item in data]
@@ -69,243 +257,241 @@ class NetUnicornRAG:
             if documents and any(doc.page_content for doc in documents):
                 split_documents = documents 
             else:
-                raise ValueError("No processable content for vector store.")
+                logging.warning("No processable content for vector store. Retriever might not find context.")
+                return FAISS.from_texts(["placeholder for empty faiss index to avoid error"], self.embeddings)
         return FAISS.from_documents(split_documents, self.embeddings)
 
-    def _setup_rag_chain(self):
+    def _strip_markdown(self, code: str) -> str:
+        code = code.strip()
+        if code.startswith("```python"):
+            code = code[len("```python"):].strip()
+        elif code.startswith("```"):
+            code = code[len("```"):].strip()
+        if code.endswith("```"):
+            code = code[:-len("```")].strip()
+        return code
+
+    def _setup_initial_rag_chain(self):
         retriever = self.vector_store.as_retriever()
-        system_prompt = ('''
-        You are an expert Python programmer specializing in the NetUnicorn library.
-        Your task is to generate a complete, runnable NetUnicorn Python script based on the user's request and relevant NetUnicorn documentation context provided.
-        The script should interact with a NetUnicorn server using the provided credentials.
+        prompt = ChatPromptTemplate.from_template(_INITIAL_SYSTEM_PROMPT_TEMPLATE)
+        combine_docs_chain = create_stuff_documents_chain(self.llm, prompt)
+        return create_retrieval_chain(retriever, combine_docs_chain)
 
-        Context: {context}
-        User's request: {input}
+    def _setup_feedback_rag_chain(self):
+        retriever = self.vector_store.as_retriever()
+        prompt = ChatPromptTemplate.from_template(_RETRY_SYSTEM_PROMPT_TEMPLATE)
+        feedback_document_chain = create_stuff_documents_chain(self.llm, prompt)
+        return create_retrieval_chain(retriever, feedback_document_chain)
 
-        Please generate the Python script adhering to the following guidelines:
-        1.  **Complete and Runnable Script**: Ensure the script includes all necessary imports (primarily from `netunicorn.client.remote.RemoteClient`, `netunicorn.base.pipeline.Pipeline`, `netunicorn.library.tasks.*`, `netunicorn.base.experiment.Experiment`, `netunicorn.base.architecture.Architecture`, `netunicorn.base.deployment.Deployment`, `netunicorn.base.environment_definitions.DockerImage`, `netunicorn.base.environment_definitions.ShellExecution`, and `netunicorn.base.nodes.NodePool` if filtering by specific node properties. Also include `from netunicorn.client.remote import RemoteClientException` and `from netunicorn.base.experiment import ExperimentStatus` and `import time` for polling status.).
-        2.  **Credentials**: Use these NetUnicorn credentials for `RemoteClient` (they will be injected into the script):
-            Endpoint: `{endpoint}`
-            Login: `{login}`
-            Password: `{password}`
-        3.  **Client Initialization**: Create a `RemoteClient` instance with the provided credentials. `client = RemoteClient(endpoint=\"{endpoint}\", login=\"{login}\", password=\"{password}\")`.
-        4.  **Pipeline Creation**:
-            *   Instantiate `Pipeline()`: `pipeline = Pipeline()`.
-            *   Add tasks to the pipeline using the `.then()` method. For example: `pipeline.then(SleepTask(10))`.
-            *   If the user requests a specific task, use that task. Otherwise, default to `SleepTask(5)`.
-        5.  **Node Selection**:
-            *   Get all available nodes using `client.get_nodes()`. Store in `node_pool = client.get_nodes()`.
-            *   Filter nodes if specified in the request. If not, select one available node: `working_nodes = node_pool.take(1)`. 
-            *   Ensure `working_nodes` is a list-like structure suitable for the experiment.
-        6.  **Experiment Object and Definition**:
-            *   Create an `Experiment` object: `experiment = Experiment()`.
-            *   Define an `environment_definition`. For simple shell commands or Python tasks that don't need special docker images, use `ShellExecution()`: `experiment.environment_definition = ShellExecution()`
-            *   Map the pipeline to nodes using the experiment object: `experiment.map(pipeline, working_nodes)`
-        7.  **Experiment Naming and Cleanup**:
-            *   Use a unique string for the experiment name, for example, `experiment_name = "nl4netunicorn_experiment_timestamp"`, where timestamp is generated using the python time package.
-            *   Before preparing, attempt to delete any pre-existing experiment with the same name:
-                ```python
-                try:
-                    client.delete_experiment(experiment_name)
-                    print(f"Successfully deleted pre-existing experiment: {{experiment_name}}")
-                except RemoteClientException as e:
-                    print(f"Info: Could not delete experiment {{experiment_name}} (may not exist or already deleted): {{e}}")
-                except Exception as e: # Catch any other potential exceptions during deletion
-                    print(f"Warning: An unexpected error occurred while trying to delete experiment {{experiment_name}}: {{e}}")
-                ```
-        8.  **Experiment Lifecycle & Results**:
-            *   Prepare the experiment: `client.prepare_experiment(experiment, experiment_name)`
-            *   Poll for READY status:
-                ```python
-                print(f"Experiment {{experiment_name}} prepared. Waiting for readiness...")
-                while True:
-                    status = client.get_experiment_status(experiment_name).status
-                    print(f"Current status: {{status}}")
-                    if status == ExperimentStatus.READY:
-                        print("Experiment is READY.")
-                        break
-                    time.sleep(10) # Poll every 10 seconds
-                ```
-            *   Start the experiment execution: `client.start_execution(experiment_name)`
-            *   Wait for the experiment to complete (poll for FINISHED status):
-                ```python
-                print(f"Experiment {{experiment_name}} started. Waiting for completion...")
-                while True:
-                    status = client.get_experiment_status(experiment_name).status
-                    print(f"Current status: {{status}}")
-                    if status != ExperimentStatus.RUNNING:
-                        break
-                    time.sleep(20) # Poll every 20 seconds
-                ```
-            *   Retrieve and print results if FINISHED:
-                ```python
-                from returns.pipeline import is_successful
-                from returns.result import Result
-                final_status_info = client.get_experiment_status(experiment_name)
-                if final_status_info.status == ExperimentStatus.FINISHED:
-                    results = final_status_info.execution_result
-                    print(f"Experiment results: {{results}}")
-                    if results:
-                        for report in results:
-                            print(f"Node name: {{report.node.name}}")
-                            print(f"Error: {{report.error}}")
 
-                            result, log = report.result  # report stores results of execution and corresponding log
-                            
-                            # result is a returns.result.Result object, could be Success of Failure
-                            print(type(result))
-                            if isinstance(result, Result):
-                                data = result.unwrap() if is_successful(result) else result
-                                pprint(data)
-                else:
-                    print(f"Experiment did not finish successfully. Final status: {{final_status_info.status}}")
-                    if final_status_info.error:
-                         print(f"Error: {{final_status_info.error}}")
+    def _generate_code_initial(self, user_prompt: str, credentials: Dict[str, str]) -> str:
+        logging.info(f"RAG: Initial generation for prompt: \"{user_prompt[:100]}...\"")
+        response = self.initial_rag_chain.invoke({
+            "input": user_prompt,
+            "endpoint": credentials["endpoint"],
+            "login": credentials["login"],
+            "password": credentials["password"]
+        })
+        generated_code = response.get("answer", "")
+        if not generated_code:
+            logging.error("RAG: Initial generation returned no code/answer.")
+            raise ValueError("LLM did not return any code for the initial prompt.")
+        return self._strip_markdown(generated_code)
 
-                ```
-        9.  **Output Format**: Generate only the Python code block. Do not include any explanatory text before or after the code block. The script should be directly runnable.
-        10. **Imports**: Ensure all necessary imports are at the top of the script. This includes `RemoteClient`, `Pipeline`, task-specific classes (e.g., `SleepTask`), `Experiment`, `ShellExecution` (or other env definitions), `ExperimentStatus`, `RemoteClientException`, and `time`.
-        11. **Pythonic Code**: Write clean, readable, and pythonic code.
-        Remember to use the specific method `experiment.map(pipeline, nodes)` AFTER `experiment = Experiment()` and `experiment.environment_definition = ShellExecution()` (or other definition).
-        Do NOT use `client.create_experiment()`. Use `client.prepare_experiment(experiment_object, experiment_name_string)`.
-        Do NOT use `experiment.wait_for_status()`, `experiment.start_execution()`, or `experiment.get_result()`. Use `client.get_experiment_status()` for polling and `client.start_execution()` to start the experiment.
-        Polling `client.get_experiment_status()` is the preferred way to check if an experiment is READY and then if it has FINISHED. This provides more feedback during execution.
-        Pay close attention to the full lifecycle: cleanup -> prepare -> poll for READY -> start -> poll for FINISHED -> process results.
-        Make sure the experiment name is unique, potentially by adding a timestamp or a UUID to `experiment_name = "my_experiment_..."`.
-        The experiment object should be passed to `client.prepare_experiment`, not the pipeline and nodes directly.
-        Script structure:
-        ```python
-        # Imports
-        # Credentials (will be injected)
-        # Client
-        # Pipeline
-        # Nodes
-        # Experiment object creation
-        # Environment definition (e.g., ShellExecution)
-        # Experiment mapping (experiment.map(pipeline, nodes))
-        # Experiment name (unique)
-        # Delete old experiment (try/except)
-        # Prepare experiment
-        # Poll for READY
-        # Start experiment
-        # Poll for FINISHED
-        # Get and print results
-        ```
-        Ensure that `working_nodes` is used when mapping the experiment: `experiment.map(pipeline, working_nodes)`.
-        The endpoint, login, and password are: {endpoint}, {login}, {password}
-        The user request is: {input}
-        Generate the full Python script now.
-        ''')
-        prompt = ChatPromptTemplate.from_messages([("system", system_prompt)])
-        question_answer_chain = create_stuff_documents_chain(self.llm, prompt)
-        return create_retrieval_chain(retriever, question_answer_chain)
+    def _generate_code_with_feedback(self, original_request: str, previous_code: str, 
+                                     execution_stdout: str, execution_stderr: str, 
+                                     credentials: Dict[str, str]) -> str:
+        logging.info(f"RAG: Generating with feedback for request: \"{original_request[:100]}...\"")
+        
+        response = self.feedback_rag_chain.invoke({
+            "input": original_request, 
+            "original_request": original_request, 
+            "previous_code": previous_code,
+            "execution_stdout": execution_stdout,
+            "execution_stderr": execution_stderr,
+            "endpoint": credentials["endpoint"],
+            "login": credentials["login"],
+            "password": credentials["password"]
+        })
+        corrected_code = response.get("answer", "")
+        
+        if not corrected_code:
+            logging.error("RAG: Feedback generation returned no code/answer.")
+            raise ValueError("LLM did not return any code during feedback generation.")
 
-    def generate_code(self, user_prompt: str, save_script: bool = True, execute_script: bool = False) -> str:
+        if corrected_code.strip() == "PREVIOUS_CODE_CORRECT":
+            logging.info("RAG: LLM indicated previous code was correct.")
+            return previous_code 
+
+        return self._strip_markdown(corrected_code)
+
+    def _get_final_save_path(self, user_prompt: str) -> str:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        sane_prompt = "".join(c if c.isalnum() or c.isspace() else "" for c in user_prompt)
+        sane_prompt = sane_prompt.replace(" ", "_")[:50]
+        filename = f"nu_script_final_{timestamp}_{sane_prompt}.py"
+        return os.path.join(self.generated_scripts_base_path, filename)
+
+    def generate_code(self, user_prompt: str, 
+                      save_final_script: bool = True, 
+                      enable_feedback_loop: bool = True, # Default to True
+                      max_retries: int = 3) -> Dict[str, Any]: # Default to 3
         if not user_prompt:
             raise ValueError("User prompt cannot be empty.")
-        
-        # Add a timestamp to the prompt for the experiment name, if not already specific
-        # This helps ensure unique experiment names if the user prompt is generic
-        # However, let the LLM handle the exact naming based on the refined prompt instructions.
-        
-        response = self.rag_chain.invoke({
-            "input": user_prompt, 
+
+        credentials = {
             "endpoint": self.netunicorn_endpoint,
             "login": self.netunicorn_login,
             "password": self.netunicorn_password
-        })
-        generated_code = response.get("answer", "")
+        }
         
-        # Strip markdown fences
-        if generated_code.startswith("```python"):
-            generated_code = generated_code[len("```python"):].strip()
-        elif generated_code.startswith("```"): # Handle cases where just ``` is used
-            generated_code = generated_code[len("```"):].strip()
+        intended_final_script_path = None
+        if save_final_script:
+            intended_final_script_path = self._get_final_save_path(user_prompt)
+            os.makedirs(os.path.dirname(intended_final_script_path), exist_ok=True)
+
+        effective_max_retries = max_retries if enable_feedback_loop else 0
         
-        if generated_code.endswith("```"):
-            generated_code = generated_code[:-len("```")].strip()
-
-        if save_script:
-            try:
-                # Create a sanitized filename from the prompt and a timestamp
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                # Sanitize prompt for filename: keep alphanumeric, replace spaces with underscores, truncate
-                sane_prompt = "".join(c if c.isalnum() or c.isspace() else "" for c in user_prompt)
-                sane_prompt = sane_prompt.replace(" ", "_")[:50] # Keep first 50 chars
-                filename = f"nu_script_{timestamp}_{sane_prompt}.py"
-                filepath = os.path.join(self.generated_scripts_path, filename) # Use the class attribute
-                with open(filepath, "w") as f:
-                    f.write(generated_code)
-                print(f"Generated script saved to: {filepath}")
-            except Exception as e:
-                print(f"Error saving script: {e}")
-
-        if execute_script:
-            print("\n--- Attempting to execute generated code ---")
-            try:
-                # Prepare a global context for exec, similar to how a script would run
-                exec_globals = {
-                    "__name__": "__main__", # Mimic script execution context
-                    # Potentially pass NetUnicorn credentials if needed for some obscure reason,
-                    # but the script should ideally get them from the RAG system or define them directly.
-                    # "NETUNICORN_ENDPOINT": self.netunicorn_endpoint,
-                    # "NETUNICORN_LOGIN": self.netunicorn_login,
-                    # "NETUNICORN_PASSWORD": self.netunicorn_password,
-                }
-                exec(generated_code, exec_globals)
-                print("--- Execution finished ---")
-            except Exception as e:
-                print(f"Error executing generated code: {e}")
-                import traceback
-                traceback.print_exc()
+        logging.info(f"RAG: Starting generation. Feedback enabled: {enable_feedback_loop}, Max retries: {effective_max_retries}")
         
-        return generated_code
+        feedback_handler = FeedbackHandler(
+            initial_code_generator=self._generate_code_initial,
+            feedback_code_generator=self._generate_code_with_feedback,
+            script_executor=self.script_executor,
+            max_retries=effective_max_retries, 
+            netunicorn_credentials=credentials
+        )
+        
+        final_script_override_name = os.path.basename(intended_final_script_path) if intended_final_script_path else None
+        
+        result = feedback_handler.run_generation_with_feedback(
+            user_prompt,
+            save_script_base_path=self.feedback_attempts_path, 
+            final_script_name_override=final_script_override_name 
+        )
 
-    # Log retrieved chunks that model finds most relevant
+        final_script_generated_path = result.get("final_script_path")
+
+        if save_final_script and intended_final_script_path and final_script_generated_path:
+            if os.path.abspath(final_script_generated_path) != os.path.abspath(intended_final_script_path):
+                try:
+                    with open(final_script_generated_path, "r", encoding="utf-8") as source_file:
+                        with open(intended_final_script_path, "w", encoding="utf-8") as dest_file:
+                            dest_file.write(source_file.read())
+                    
+                    log_message_verb = "Copied successful" if result["success"] else "Copied last attempted"
+                    logging.info(f"{log_message_verb} script from {final_script_generated_path} to {intended_final_script_path}")
+                    result['final_script_path'] = intended_final_script_path # Update result to point to the RAG's intended path
+                except IOError as e:
+                    logging.error(f"Error copying script to final destination: {e}. Script remains at: {final_script_generated_path}")
+        elif not save_final_script and final_script_generated_path:
+            if self.feedback_attempts_path in os.path.abspath(final_script_generated_path):
+                try:
+                    if not (intended_final_script_path and os.path.abspath(final_script_generated_path) == os.path.abspath(intended_final_script_path)):
+                        os.remove(final_script_generated_path)
+                        logging.info(f"Not saving final script, removed temporary script: {final_script_generated_path}")
+                        if 'final_script_path' in result:
+                           result['final_script_path'] = None
+                except OSError as e:
+                    logging.warning(f"Could not remove temporary script {final_script_generated_path}: {e}")
+            result['final_script_path'] = None
+
+
+        logging.info(f"RAG: Processing finished. Success: {result['success']}. Final script path: {result.get('final_script_path')}")
+        return result
+
     def log_retrieved_chunks(self, user_prompt: str, k: int = 3) -> str:
+        logging.info(f"RAG: Retrieving chunks for prompt: \"{user_prompt[:100]}...\"")
         retriever = self.vector_store.as_retriever()
-        retrieved_docs = retriever.invoke(user_prompt)
-        log = [f"Retrieved Context Chunks for: \"{user_prompt}\"\n"]
+        try:
+            retrieved_docs = retriever.invoke(user_prompt) 
+        except Exception as e:
+            logging.error(f"Error during document retrieval for logging: {e}")
+            return f"Error retrieving documents: {e}"
 
+        log_lines = [f"Retrieved Context Chunks for: \"{user_prompt}\"\n"]
+        if not retrieved_docs:
+            log_lines.append("No documents retrieved.")
         for i, doc in enumerate(retrieved_docs[:k]):
             source = doc.metadata.get('source', 'unknown')
-            content = doc.page_content.strip()[:1000] # Limit length for brevity
-            log.append(f"Chunk {i+1} (source: {source}): \n")
-            log.append("```\n" + content + "\n```\n")
+            content_preview = doc.page_content.strip()[:300].replace('\n', ' ') 
+            log_lines.append(f"Chunk {i+1} (source: {source}): \n")
+            log_lines.append(f"```\n{content_preview}...\n```\n")
+        return "\n".join(log_lines)
 
-        return "\n".join(log)
 
-
-# Main block for direct testing (remove or keep for utility)
+# Main block for direct testing
 if __name__ == '__main__':
     try:
-        # This main block is for testing the RAG class itself.
-        # When running examples/generate_netunicorn_script.py, that script's main is used.
-        # Ensure .env is in the project root (NL4NetUnicorn/.env)
-        print("Testing NetUnicornRAG directly from netunicorn_rag.py...")
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Attempting to load .env from: {os.path.join(os.path.dirname(__file__), '..', '..', '.env')}")
+        print("Testing NetUnicornRAG with feedback loop...")
         
-        rag_system = NetUnicornRAG() # docs_path will be relative to project root due to updated __init__
+        rag_system = NetUnicornRAG()
         
-        test_prompt = "Create a NetUnicorn script that connects to the server, selects one available node, and runs a sleep task for 10 seconds."
+        test_prompt_for_failure = "Generate a python script for NetUnicorn that tries to print the experiment name, but call an undefined function 'get_my_undefined_experiment_name()' to get it, causing a NameError. The script should still have the basic NetUnicorn structure (client, pipeline, experiment prep, etc.)."
         
-        print("\n--- Logging Retrieved Chunks ---")
-        print(rag_system.log_retrieved_chunks(test_prompt))
-        print("-----------------------------")
-        
-        print(f"\nTesting RAG system with prompt: \"{test_prompt}\"")
-        code = rag_system.generate_code(test_prompt, save_script=True, execute_script=False) # Test save, no exec
-        
-        print("\n--- Generated Code ---")
-        print(code)
-        print("----------------------")
+        print("\n--- Logging Retrieved Chunks for initial prompt ---")
+        print(rag_system.log_retrieved_chunks(test_prompt_for_failure))
+        print("------------------------------------")
+
+        logging.info("\n--- Test 1: With Feedback Loop (max_retries=1) ---")
+        result_feedback = rag_system.generate_code(
+            test_prompt_for_failure, 
+            save_final_script=True, 
+            enable_feedback_loop=True, 
+            max_retries=1 
+        )
+        print("\n--- Feedback Loop Test Results ---")
+        print(f"Overall Success: {result_feedback['success']}")
+        print(f"Final Code:\n{result_feedback['final_code']}")
+        print(f"Final Script Path: {result_feedback.get('final_script_path')}")
+        print("Report Log:")
+        for i, entry in enumerate(result_feedback["report_log"]):
+            print(f"  Attempt {entry['attempt']}:")
+            print(f"    Code Generated: {'Yes' if entry.get('code') else 'No'}")
+            if entry.get('error_in_generation'): print(f"    Error in Generation: {entry['error_in_generation']}")
+            if entry.get('filepath_this_attempt'): print(f"    Filepath: {entry['filepath_this_attempt']}")
+            if entry.get('execution_result'):
+                exec_res = entry['execution_result']
+                print(f"    Execution Success: {exec_res['success']}, Exit Code: {exec_res['exit_code']}")
+                print(f"    STDOUT: {exec_res['stdout'][:100].strip()}...")
+                print(f"    STDERR: {exec_res['stderr'][:100].strip()}...")
+            if entry.get('error_in_regeneration'): print(f"    Error in Regeneration: {entry['error_in_regeneration']}")
+        print("------------------------------------")
+
+        logging.info("\n--- Test 2: Single shot execution ---")
+        test_prompt_simple = "Generate a python script that prints 'Hello from single shot'."
+        result_single = rag_system.generate_code(
+            test_prompt_simple,
+            save_final_script=True,
+            enable_feedback_loop=False,
+            max_retries=0
+        )
+        print("\n--- Single Shot Test Results ---")
+        print(f"Overall Success: {result_single['success']}")
+        print(f"Final Code:\n{result_single['final_code']}")
+        print(f"Final Script Path: {result_single.get('final_script_path')}")
+        if result_single.get('last_execution_output'):
+            print(f"Execution STDOUT: {result_single['last_execution_output']['stdout'].strip()}")
+            print(f"Execution STDERR: {result_single['last_execution_output']['stderr'].strip()}")
+        print("------------------------------------")
+
+        logging.info("\n--- Test 3: Generation only, no execution, no feedback ---")
+        result_gen_only = rag_system.generate_code(
+            test_prompt_simple,
+            save_final_script=False, 
+            enable_feedback_loop=False,
+            max_retries=0 
+        )
+        print("\n--- Generation Only Test Results ---")
+        print(f"Final Code:\n{result_gen_only['final_code']}")
+        print(f"Final Script Path: {result_gen_only.get('final_script_path')}") # Should be None
+        print(f"Success (execution status): {result_gen_only['success']}") 
+        print("------------------------------------")
 
     except FileNotFoundError as e:
-        print(f"Error during direct testing: {e}. Ensure .env file is in project root and docs exist.")
+        print(f"ERROR: Prerequisites missing. {e}. Ensure .env file and docs JSON exist.", file=sys.stderr)
     except ValueError as e:
-        print(f"Configuration Error during direct testing: {e}")
+        print(f"Configuration Error: {e}", file=sys.stderr)
     except Exception as e:
-        print(f"An unexpected error occurred during direct testing: {e}")
-        import traceback
-        traceback.print_exc() 
+        print(f"An unexpected error occurred during testing: {e}", file=sys.stderr)
+        traceback.print_exc()
