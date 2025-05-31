@@ -44,7 +44,7 @@ Please generate the Python script adhering to the following guidelines:
     - Specific task classes from `netunicorn.library.tasks.*` (e.g., `from netunicorn.library.tasks.basic import SleepTask`)
     - `from netunicorn.base.environment_definitions import ShellExecution` (or other environment definitions if needed)
     - `from returns.pipeline import is_successful`
-    - `from returns.result import Result`
+    - `from returns.result import Result`  # CRITICAL: Must be imported for handling 'Result' objects from tasks.
 2.  **Credentials**: The script will use NetUnicorn credentials provided as Python variables (endpoint, login, password). Your generated code should use these directly.
     Your first lines of code in the script, after imports, should define these credentials like so, using the exact values provided to you:
     `NETUNICORN_ENDPOINT = "{endpoint}"`  # Actual endpoint value will be provided here
@@ -180,8 +180,8 @@ If there are errors in STDERR or the STDOUT does not indicate success:
    - Task result and logs are in `report.result` which is a tuple: `actual_result_value, log_list = report.result`.
    - If `actual_result_value` is a `returns.result.Result` object, use `is_successful(actual_result_value)` and then `actual_result_value.unwrap()` or `actual_result_value.failure()`.
    - Print logs by iterating through `log_list`.
-   - Ensure `pprint`, `Result`, `is_successful` and all other necessary NetUnicorn classes are imported at the top of the script.
-7. **Experiment Cleanup**: Ensure the experiment cleanup uses `try...except RemoteClientException: print(...)` specifically for `client.delete_experiment`.
+   - Ensure `pprint`, `is_successful`, and other NetUnicorn classes are imported. CRITICALLY, ensure `from returns.result import Result` is explicitly imported at the top of the script if `Result` objects are handled.
+7.  **Experiment Cleanup**: Ensure the experiment cleanup uses `try...except RemoteClientException: print(...)` specifically for `client.delete_experiment`.
 8.  **Credentials**: Ensure the corrected script defines and uses the NetUnicorn credentials at the top, like so, using the exact values provided:
     `NETUNICORN_ENDPOINT = "{endpoint}"`  # Actual endpoint value will be provided here
     `NETUNICORN_LOGIN = "{login}"`    # Actual login value will be provided here
