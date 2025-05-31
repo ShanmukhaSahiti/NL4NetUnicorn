@@ -20,7 +20,7 @@ def parse_prompts(file_path: str) -> list[str]:
     return prompts
 
 
-def evaluate_rag(rag: NetUnicornRAG, prompts: list[str], out_path: str):
+def evaluate_rag(rag: NetUnicornRAG, prompts: list[str], out_path: str, save_script: bool, feedback_loop: bool, retries):
     with open(out_path, "w") as f:
         f.write(f"# NetUnicorn RAG Evaluation Report\n")
         f.write(f"Generated: {datetime.now().isoformat()}\n\n")
@@ -34,7 +34,19 @@ def evaluate_rag(rag: NetUnicornRAG, prompts: list[str], out_path: str):
 
             # Generate code
             try:
-                code = rag.generate_code(prompt)
+                if retries:
+                    code = rag.generate_code(
+                        user_prompt=prompt,
+                        save_final_script=save_script,
+                        enable_feedback_loop=feedback_loop,
+                        max_retries=retries
+                        )
+                else:
+                    code = rag.generate_code(
+                        user_prompt=prompt,
+                        save_final_script=save_script,
+                        enable_feedback_loop=feedback_loop
+                        )
                 f.write("### Generated Code:\n")
                 f.write("```python\n" + code + "\n```\n\n")
             except Exception as e:
@@ -49,9 +61,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Generating and Evaluating LLM-Generated Scripts')
     parser.add_argument('-i', '--input', dest='file', help='Prompts File: Each prompt should be in a new line', type=str, required=True)
+    parser.add_argument('-s', '--save_script', dest='save_script', help='Disable saving the generated script in a file', action='store_false')
+    parser.add_argument('-f', '--feedback_loop', dest='feedback_loop', help='Disable feedback loop', action='store_false')
+    parser.add_argument('-r', '--retries', dest='retries', help='Max number of retries', type=int)
 
     args = parser.parse_args()
     input_file = args.file
+    save_script = args.save_script
+    feedback_loop = args.feedback_loop
+    retries = args.retries
+
     labeled_prompts = parse_prompts(input_file)
-    evaluate_rag(rag, labeled_prompts, out_file)
+    evaluate_rag(rag, labeled_prompts, out_file, save_script, feedback_loop, retries)
     print(f"Evaluation saved to: {out_file}")
