@@ -1,0 +1,91 @@
+
+================================================================================
+LLM JUDGE CONTEXT APTNESS EVALUATION
+================================================================================
+
+Original User Prompt:
+---
+Generate a NetUnicorn script that selects three nodes, runs a ping test to google.com, and then performs an Ookla speed test
+---
+
+Retrieved Context (Top 3 chunks shown to judge):
+---
+Chunk 1 (Source: NetUnicorn Library Task: OoklaSpeedtest):
+The `OoklaSpeedtest` task from `netunicorn.library.tasks.measurements.ookla_speedtest` runs an Ookla Speedtest CLI test on the node. **Import:** `from netunicorn.library.tasks.measurements.ookla_speedtest import OoklaSpeedtest` **Usage:** `pipeline.then(OoklaSpeedtest(server_selection_task_name="name_of_server_selection_task", source_ip="optional_source_ip_for_selection", timeout=100))` Alternatively, can be run without `server_selection_task_name` or `source_ip` to let Ookla CLI auto-select a server. **Considerations:** - May require the Ookla Speedtest CLI to be installed on the execution nodes or provided via a Docker environment. - Often used in conjunction with `ServerSelection` and `OoklaSpeedtestAnalysis` tasks.
+---
+Chunk 2 (Source: NetUnicorn Library: Example Pipelines (measurements)):
+The `netunicorn.library.pipelines.measurements` module provides example pre-defined pipelines such as `simple_speedtest_pipeline()` or `netflex_ookla_full_loop_pipeline()`. These demonstrate how to chain measurement, data transfer, and analysis tasks.
+---
+Chunk 3 (Source: NetUnicorn Library: measurements Tasks (Specialized)):
+Specialized measurement tasks from submodules of `netunicorn.library.tasks.measurements`: - `measurements.alexa.alexa.AlexaWebsitesTask(num_of_websites: int)`: Performs network measurements (curl, dig, traceroute, ping) to the top `num_of_websites` from the Alexa Top 1 Million list. - `measurements.cloudflare.speedtest.CloudflareSpeedTest(count: int = 3, warmup_bytes: int = 100000)`: Runs a speed test using Cloudflare's network, performing `count` tests after a warmup phase. (Dispatcher for `CloudflareSpeedTestLinuxImplementation`)
+---
+---
+
+LLM Judge's Assessment (Model: gpt-4.1):
+---
+**Evaluation of Retrieved Context for NetUnicorn Script Generation**
+
+---
+
+### 1. Relevance
+
+- **Chunk 1**: Highly relevant. It directly describes the `OoklaSpeedtest` task, which is explicitly requested in the user prompt.
+- **Chunk 2**: Somewhat relevant. It mentions example pipelines for measurements, including speed tests, which could be useful for understanding how to chain tasks, but does not provide specifics about ping tests or node selection.
+- **Chunk 3**: Partially relevant. It describes other measurement tasks (e.g., AlexaWebsitesTask, CloudflareSpeedTest), but none directly address the ping test to google.com or node selection. The AlexaWebsitesTask mentions ping, but only in the context of Alexa top sites, not arbitrary hosts like google.com.
+
+**Irrelevant Chunks**: None are entirely irrelevant, but Chunks 2 and 3 are only tangentially related to the specific user request.
+
+---
+
+### 2. Sufficiency
+
+- The context provides detailed information about running an Ookla speed test using NetUnicorn, including import statements and usage.
+- However, it **lacks information on how to:**
+    - Select three nodes from the available pool (no mention of node selection APIs or methods).
+    - Run a ping test to a specific host (e.g., google.com) as a standalone task (no mention of a generic ping task or how to configure it for a specific target).
+    - Chain these tasks together in a pipeline (while Chunk 2 mentions pipelines, it does not provide concrete examples or syntax for chaining a ping and a speed test).
+- There is no example of a full script or pipeline that combines node selection, ping, and speed test tasks.
+
+---
+
+### 3. Helpfulness
+
+- The context would help an LLM correctly implement the Ookla speed test portion of the script.
+- It may mislead or leave the LLM guessing about how to perform node selection and the ping test, as these are not covered.
+- The lack of concrete examples for chaining tasks or selecting nodes could result in incomplete or incorrect script generation.
+
+---
+
+### 4. Overall Assessment & Suggestions
+
+**Assessment**: **Adequate**
+
+- The context is **adequate** for generating the Ookla speed test part of the script but is insufficient for the full user request.
+- **Suggestions for Improvement**:
+    - Retrieve documentation or examples on how to select nodes in NetUnicorn (e.g., using selectors, filters, or assignment methods).
+    - Include information or code snippets for running a ping test to a user-specified host.
+    - Provide a full example of chaining multiple tasks (e.g., ping followed by speed test) in a pipeline.
+    - If available, include a sample script that demonstrates the full workflow requested by the user.
+
+---
+
+### Scores
+
+<scores>
+    Relevance: 4
+    Sufficiency: 2
+    Helpfulness: 3
+    Overall: 3
+</scores>
+---
+================================================================================
+
+Scores:
+---
+
+    Relevance: 4
+    Sufficiency: 2
+    Helpfulness: 3
+    Overall: 3
+
+---

@@ -1,0 +1,15 @@
+Generate a NetUnicorn script that selects three nodes, runs a ping test to google.com, and then performs an Ookla speed test
+Create a NetUnicorn script that starts a tcpdump capture on a node, runs a YouTube video QoE test, and stops the capture afterward
+Build a NetUnicorn pipeline that selects two nodes, starts an iperf3 server on one, runs an iperf3 client on the other, and then analyzes the throughput
+Write a NetUnicorn script that runs a Flent server on one node, performs a Flent test from another node, and stops the Flent server afterward
+Create a NetUnicorn experiment that runs a shell command to update packages and then sleeps for 10 seconds to simulate a reboot delay
+Generate a NetUnicorn script that watches a YouTube video, captures network traffic using tshark, and uploads the pcap file to file.io
+Make a NetUnicorn pipeline that selects the top Ookla server, runs a speed test using that server, and performs OoklaSpeedtestAnalysis afterward
+Write a script that captures network traffic while running a DNS query test with Alexa websites, and then extracts 5-tuple data from the pcap file
+Create a NetUnicorn script that performs a port knock on a server and then executes a shell command if the knock was successful
+Generate a script that starts an NDT7 speed test, then saves and sends the results to another node using SendData and FetchData tasks
+Construct a NetUnicorn experiment that performs a random sleep, then runs a shell command to check disk space
+Create a script that starts a Let's Encrypt HTTP-01 certificate validation and captures traffic during the process using tcpdump
+Build a pipeline that runs a Cloudflare speed test, then uploads the result file to Google Cloud Storage
+Generate a NetUnicorn pipeline that simulates an ARP spoofing attack on a node, then captures and logs network traffic during the attack
+Write a NetUnicorn script that filters nodes by name, runs a dummy task for debugging, and then executes a ping test to a custom IP

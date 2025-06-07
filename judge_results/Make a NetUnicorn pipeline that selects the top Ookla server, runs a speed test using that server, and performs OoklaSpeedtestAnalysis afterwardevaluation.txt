@@ -1,0 +1,90 @@
+
+================================================================================
+LLM JUDGE CONTEXT APTNESS EVALUATION
+================================================================================
+
+Original User Prompt:
+---
+Make a NetUnicorn pipeline that selects the top Ookla server, runs a speed test using that server, and performs OoklaSpeedtestAnalysis afterward
+---
+
+Retrieved Context (Top 3 chunks shown to judge):
+---
+Chunk 1 (Source: NetUnicorn Library Task: OoklaSpeedtest):
+The `OoklaSpeedtest` task from `netunicorn.library.tasks.measurements.ookla_speedtest` runs an Ookla Speedtest CLI test on the node. **Import:** `from netunicorn.library.tasks.measurements.ookla_speedtest import OoklaSpeedtest` **Usage:** `pipeline.then(OoklaSpeedtest(server_selection_task_name="name_of_server_selection_task", source_ip="optional_source_ip_for_selection", timeout=100))` Alternatively, can be run without `server_selection_task_name` or `source_ip` to let Ookla CLI auto-select a server. **Considerations:** - May require the Ookla Speedtest CLI to be installed on the execution nodes or provided via a Docker environment. - Often used in conjunction with `ServerSelection` and `OoklaSpeedtestAnalysis` tasks.
+---
+Chunk 2 (Source: NetUnicorn Library: Example Pipelines (measurements)):
+The `netunicorn.library.pipelines.measurements` module provides example pre-defined pipelines such as `simple_speedtest_pipeline()` or `netflex_ookla_full_loop_pipeline()`. These demonstrate how to chain measurement, data transfer, and analysis tasks.
+---
+Chunk 3 (Source: NetUnicorn Library Task: OoklaSpeedtestAnalysis):
+The `OoklaSpeedtestAnalysis` task from `netunicorn.library.tasks.measurements.ookla_speedtest` analyzes the JSON output from a previous `OoklaSpeedtest` task. **Import:** `from netunicorn.library.tasks.measurements.ookla_speedtest import OoklaSpeedtestAnalysis` **Usage:** `pipeline.then(OoklaSpeedtestAnalysis(speedtest_task_name="name_of_ookla_speedtest_task"))` **Considerations:** - `speedtest_task_name` must match the name given to the `OoklaSpeedtest` task in the pipeline (e.g., using `.set_name("run_ookla_test")`). - It classifies latency and throughput and returns a summary dictionary.
+---
+---
+
+LLM Judge's Assessment (Model: gpt-4.1):
+---
+**Evaluation of Retrieved Context for NetUnicorn Script Generation**
+
+---
+
+### 1. Relevance
+
+- **Chunk 1** is highly relevant. It describes the `OoklaSpeedtest` task, its import path, usage, and how it can be configured to use a selected server (via `server_selection_task_name`). It also mentions its typical use with `ServerSelection` and `OoklaSpeedtestAnalysis`, which aligns with the user prompt.
+- **Chunk 2** is somewhat relevant. It references example pipelines in the measurements module, which could help with pipeline structure, but does not provide specifics about server selection or analysis tasks.
+- **Chunk 3** is highly relevant. It details the `OoklaSpeedtestAnalysis` task, including import, usage, and the requirement to match the task name with the preceding speed test.
+
+**No irrelevant chunks are present**; all are at least tangentially related to the user's request.
+
+---
+
+### 2. Sufficiency
+
+- The context provides:
+  - How to import and use `OoklaSpeedtest` and `OoklaSpeedtestAnalysis`.
+  - The mechanism for chaining these tasks in a pipeline.
+  - The need to specify task names for linking analysis to the correct speed test.
+- **Missing Information:**
+  - There is **no explicit information about how to select the "top Ookla server"**. While Chunk 1 mentions `ServerSelection` and the `server_selection_task_name` parameter, it does not provide details about the `ServerSelection` task itself—its import path, usage, or how to configure it to select the "top" server.
+  - There is no example of a full pipeline chaining all three steps (server selection → speed test → analysis).
+  - Chunk 2 hints at example pipelines but does not provide their content or clarify if any of them perform the exact sequence requested.
+
+---
+
+### 3. Helpfulness
+
+- The context is **helpful for constructing the speed test and analysis steps** and for understanding how to chain tasks in a pipeline.
+- However, **it is not fully helpful for the server selection step**, which is critical to the user's request. An LLM might infer the need for a `ServerSelection` task but would lack the specifics to implement it correctly.
+- The context would likely lead to a partially correct script, with a placeholder or guess for the server selection component.
+
+---
+
+### 4. Overall Assessment & Suggestions
+
+**Assessment:**  
+The retrieved context is **Adequate**. It covers two out of three required steps in detail (speed test and analysis) but lacks concrete information about the server selection step, which is essential for fulfilling the user's prompt. The context would not mislead the LLM but would leave it unable to fully and accurately complete the script as requested.
+
+**Suggestions for Improvement:**
+- Retrieve documentation or code snippets for the `ServerSelection` task, including its import path, usage, and how to configure it to select the "top" Ookla server.
+- Provide an example pipeline that chains server selection, speed test, and analysis.
+- If available, include information about how to pass the selected server from `ServerSelection` to `OoklaSpeedtest`.
+
+---
+
+<scores>
+    Relevance: 5
+    Sufficiency: 3
+    Helpfulness: 3
+    Overall: 3
+</scores>
+---
+================================================================================
+
+Scores:
+---
+
+    Relevance: 5
+    Sufficiency: 3
+    Helpfulness: 3
+    Overall: 3
+
+---

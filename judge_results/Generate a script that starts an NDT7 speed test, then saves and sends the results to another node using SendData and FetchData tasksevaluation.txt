@@ -1,0 +1,94 @@
+
+================================================================================
+LLM JUDGE CONTEXT APTNESS EVALUATION
+================================================================================
+
+Original User Prompt:
+---
+Generate a script that starts an NDT7 speed test, then saves and sends the results to another node using SendData and FetchData tasks
+---
+
+Retrieved Context (Top 3 chunks shown to judge):
+---
+Chunk 1 (Source: NetUnicorn Library Task: OoklaSpeedtest):
+The `OoklaSpeedtest` task from `netunicorn.library.tasks.measurements.ookla_speedtest` runs an Ookla Speedtest CLI test on the node. **Import:** `from netunicorn.library.tasks.measurements.ookla_speedtest import OoklaSpeedtest` **Usage:** `pipeline.then(OoklaSpeedtest(server_selection_task_name="name_of_server_selection_task", source_ip="optional_source_ip_for_selection", timeout=100))` Alternatively, can be run without `server_selection_task_name` or `source_ip` to let Ookla CLI auto-select a server. **Considerations:** - May require the Ookla Speedtest CLI to be installed on the execution nodes or provided via a Docker environment. - Often used in conjunction with `ServerSelection` and `OoklaSpeedtestAnalysis` tasks.
+---
+Chunk 2 (Source: NetUnicorn Library: data_transfer Tasks):
+Tasks from `netunicorn.library.tasks.data_transfer` for moving files between nodes after task execution: - `data_transfer.SendData(filepath: str, task_name: str, data_type: Literal[\"ookla-speedtest\", \"pcp-speedtest\", \"iperf3\", \"netperf\", \"flent\", \"file\"] = \"file\", local_filepath_is_temporary: bool = False)`: Makes the file at `filepath` available for fetching by other nodes. `task_name` is used to identify this data source. `data_type` provides context. If `local_filepath_is_temporary` is true, the file might be deleted after being fetched. - `data_transfer.FetchData(send_data_task: str, endpoint: str)`: Fetches a file that was made available by a `SendData` task (identified by `send_data_task` which is the name of the SendData task in the pipeline) from the specified `endpoint` (node name or IP of the node that ran SendData). The fetched file is typically stored in the current working directory of the FetchData task.
+---
+Chunk 3 (Source: NetUnicorn Library: Example Pipelines (measurements)):
+The `netunicorn.library.pipelines.measurements` module provides example pre-defined pipelines such as `simple_speedtest_pipeline()` or `netflex_ookla_full_loop_pipeline()`. These demonstrate how to chain measurement, data transfer, and analysis tasks.
+---
+---
+
+LLM Judge's Assessment (Model: gpt-4.1):
+---
+**Evaluation of Retrieved Context for NetUnicorn Script Generation**
+
+---
+
+### 1. Relevance
+
+- **Chunk 1 (OoklaSpeedtest):**  
+  This chunk describes the OoklaSpeedtest task, which is not the NDT7 speed test requested by the user. While it is about speed testing, it is not directly relevant to NDT7.  
+- **Chunk 2 (SendData/FetchData):**  
+  This chunk is highly relevant. It describes the SendData and FetchData tasks, which are specifically mentioned in the user prompt for transferring results between nodes.  
+- **Chunk 3 (Example Pipelines):**  
+  This chunk is somewhat relevant as it mentions example pipelines that chain measurement and data transfer tasks, but it does not mention NDT7 or provide concrete examples for the requested workflow.
+
+**Irrelevant Chunks:**  
+- Chunk 1 is not directly relevant because it focuses on OoklaSpeedtest, not NDT7.
+
+---
+
+### 2. Sufficiency
+
+- The context **does not provide sufficient information** to generate a script for an NDT7 speed test. There is no mention of an NDT7 task, its import path, usage, or output file format.  
+- The context does provide sufficient detail on how to use SendData and FetchData, which covers the data transfer part of the prompt.
+- There is no example or documentation snippet showing how to chain an NDT7 measurement with SendData and FetchData, nor any mention of how to capture or save NDT7 results.
+
+**Key Missing Pieces:**
+- Documentation or usage example for an NDT7 speed test task in NetUnicorn.
+- Information on the output file or data format of the NDT7 task (needed for SendData).
+- Example pipeline or code snippet chaining NDT7 with SendData and FetchData.
+
+---
+
+### 3. Helpfulness
+
+- The context would help the LLM correctly implement the data transfer part (SendData/FetchData), but it would likely mislead the LLM to use OoklaSpeedtest instead of NDT7 for the speed test, since no NDT7 information is provided.
+- The lack of NDT7 details means the LLM might either hallucinate the NDT7 task or incorrectly substitute OoklaSpeedtest, resulting in an inaccurate script.
+- The example pipelines chunk hints at chaining tasks but does not provide actionable details for the specific NDT7 + data transfer workflow.
+
+---
+
+### 4. Overall Assessment & Suggestions
+
+**Assessment:**  
+The retrieved context is **Adequate**. It covers the data transfer tasks well but fails to address the core requirement of running an NDT7 speed test. The inclusion of OoklaSpeedtest information is not helpful for this specific prompt and could mislead the LLM. The context would be much improved by retrieving documentation or usage examples for the NDT7 speed test task in NetUnicorn, including its import path, parameters, and output handling.
+
+**Suggestions for Improvement:**
+- Retrieve documentation for the NDT7 speed test task/module in NetUnicorn (e.g., import path, usage, output).
+- Provide an example of chaining NDT7 with SendData and FetchData.
+- If available, include a sample pipeline or code snippet that demonstrates the full workflow requested.
+
+---
+
+<scores>
+    Relevance: 3
+    Sufficiency: 2
+    Helpfulness: 2
+    Overall: 2
+</scores>
+---
+================================================================================
+
+Scores:
+---
+
+    Relevance: 3
+    Sufficiency: 2
+    Helpfulness: 2
+    Overall: 2
+
+---

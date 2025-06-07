@@ -1,0 +1,92 @@
+
+================================================================================
+LLM JUDGE CONTEXT APTNESS EVALUATION
+================================================================================
+
+Original User Prompt:
+---
+Create a NetUnicorn script that starts a tcpdump capture on a node, runs a YouTube video QoE test, and stops the capture afterward
+---
+
+Retrieved Context (Top 3 chunks shown to judge):
+---
+Chunk 1 (Source: NetUnicorn Library: capture Tasks):
+Tasks from `netunicorn.library.tasks.capture` for network traffic capture: - `capture.tcpdump.StartCapture(filepath: str, arguments: Optional[List[str]] = None)`: Starts a tcpdump process, saving output to `filepath`. Custom `arguments` can be provided. - `capture.tcpdump.StopNamedCapture(name: str)`: Stops a tcpdump process that was started with a specific `name` (referring to the `StartCapture` task name). - `capture.tcpdump.StopAllCapture()`: Stops all currently running tcpdump processes initiated by the library on the node. - `capture.tshark.StartCapture(filepath: str, arguments: Optional[List[str]] = None)`: Starts a tshark process, saving output to `filepath`. Custom `arguments` can be provided. - `capture.tshark.StopNamedCapture(name: str)`: Stops a tshark process started with a specific `name`. - `capture.tshark.StopAllCapture()`: Stops all currently running tshark processes initiated by the library on the node.
+---
+Chunk 2 (Source: NetUnicorn Library: qoe_youtube Tasks):
+Tasks from `netunicorn.library.tasks.qoe_youtube` for Quality of Experience (QoE) monitoring of YouTube videos. Involves a collection server and a video watching task. - `qoe_youtube.StartQoECollectionServer(...)` - `qoe_youtube.StopQoECollectionServer(...)` - `qoe_youtube.WatchYouTubeVideo(...)` (These are complex tasks, often dispatchers for OS-specific implementations with significant dependencies like Selenium/Chrome. Refer to the module for details.)
+---
+Chunk 3 (Source: NetUnicorn Library: Example Pipelines (measurements)):
+The `netunicorn.library.pipelines.measurements` module provides example pre-defined pipelines such as `simple_speedtest_pipeline()` or `netflex_ookla_full_loop_pipeline()`. These demonstrate how to chain measurement, data transfer, and analysis tasks.
+---
+---
+
+LLM Judge's Assessment (Model: gpt-4.1):
+---
+**Evaluation of Retrieved Context for NetUnicorn Script Generation**
+
+---
+
+### 1. Relevance
+
+- **Chunk 1**: Highly relevant. It provides details about starting and stopping tcpdump captures using NetUnicorn tasks, which directly addresses the first and last parts of the user prompt.
+- **Chunk 2**: Highly relevant. It describes the available tasks for YouTube QoE testing, including starting/stopping a collection server and running a YouTube video QoE test, which is the core of the user request.
+- **Chunk 3**: Marginally relevant. It mentions example pipelines for chaining tasks, which could be useful for understanding how to sequence tasks in NetUnicorn scripts, but does not directly reference tcpdump or YouTube QoE. However, it may inspire the LLM to structure the script as a pipeline.
+
+**Irrelevant Chunks**: None are completely irrelevant, but Chunk 3 is only tangentially relevant.
+
+---
+
+### 2. Sufficiency
+
+- **Strengths**: The context provides the names and basic signatures of the required tasks for both tcpdump capture and YouTube QoE testing. It also hints at the need to chain these tasks, which is central to the user prompt.
+- **Missing Information**:
+    - **Task Parameters**: The context does not provide detailed parameter lists or example values for the `WatchYouTubeVideo` or `StartQoECollectionServer` tasks. The LLM may not know what arguments are required or optional.
+    - **Task Sequencing**: There is no explicit example or documentation on how to chain these tasks together in a NetUnicorn script (e.g., in a pipeline or as a task list).
+    - **Script Structure**: There is no template or example of a full NetUnicorn script, which could help the LLM with boilerplate or best practices.
+    - **Resource Management**: No information on whether the QoE server must be started/stopped for a single video test, or if it is optional for the script.
+    - **Error Handling**: No guidance on handling errors or ensuring the tcpdump capture is stopped even if the QoE test fails.
+
+---
+
+### 3. Helpfulness
+
+- **Positive Aspects**: The context gives the LLM the correct task names and their general purpose, which is crucial for generating a script that uses the NetUnicorn library correctly.
+- **Potential Issues**: The lack of parameter details and absence of a script or pipeline example may cause the LLM to guess or hallucinate arguments, leading to incomplete or incorrect code. The LLM may also be unsure about the correct order or dependencies between tasks (e.g., whether to start/stop the QoE server).
+- **Risk of Misleading**: Chunk 3 could potentially mislead the LLM into using unrelated pipelines, but this risk is low since the chunk is clearly labeled as examples.
+
+---
+
+### 4. Overall Assessment & Suggestions
+
+**Assessment**: **Adequate**
+
+- The context is relevant and provides the essential building blocks for the script, but it lacks depth in terms of parameter documentation and concrete usage examples. This may result in a script that is structurally correct but incomplete or incorrect in its details.
+- **Suggestions for Improvement**:
+    - Retrieve documentation or examples showing the full parameter lists for `WatchYouTubeVideo` and `StartQoECollectionServer`.
+    - Include a sample NetUnicorn script or pipeline that demonstrates chaining multiple tasks.
+    - Provide guidance on whether the QoE collection server is required for a single video test and how to manage its lifecycle.
+    - Add information on error handling or best practices for starting/stopping captures in NetUnicorn scripts.
+
+---
+
+### Scores
+
+<scores>
+    Relevance: 5
+    Sufficiency: 3
+    Helpfulness: 3
+    Overall: 3
+</scores>
+---
+================================================================================
+
+Scores:
+---
+
+    Relevance: 5
+    Sufficiency: 3
+    Helpfulness: 3
+    Overall: 3
+
+---

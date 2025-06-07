@@ -1,0 +1,90 @@
+
+================================================================================
+LLM JUDGE CONTEXT APTNESS EVALUATION
+================================================================================
+
+Original User Prompt:
+---
+Write a script that captures network traffic while running a DNS query test with Alexa websites, and then extracts 5-tuple data from the pcap file
+---
+
+Retrieved Context (Top 3 chunks shown to judge):
+---
+Chunk 1 (Source: NetUnicorn Library: Example Pipelines (measurements)):
+The `netunicorn.library.pipelines.measurements` module provides example pre-defined pipelines such as `simple_speedtest_pipeline()` or `netflex_ookla_full_loop_pipeline()`. These demonstrate how to chain measurement, data transfer, and analysis tasks.
+---
+Chunk 2 (Source: NetUnicorn Library: preprocessing Tasks):
+Tasks from `netunicorn.library.tasks.preprocessing` for processing captured network data (e.g., pcap files) on the node. Examples: - `preprocessing.scapy.Get5Tuples(filename: str)` - `preprocessing.scapy.GetDNSQueries(filename: str)` - `preprocessing.tshark.TsharkCommand(command: list[str])` - `preprocessing.zeek.ZeekPCAPAnalysis(...)` (Refer to specific modules for import paths and parameters).
+---
+Chunk 3 (Source: NetUnicorn Library: measurements Tasks (Specialized)):
+Specialized measurement tasks from submodules of `netunicorn.library.tasks.measurements`: - `measurements.alexa.alexa.AlexaWebsitesTask(num_of_websites: int)`: Performs network measurements (curl, dig, traceroute, ping) to the top `num_of_websites` from the Alexa Top 1 Million list. - `measurements.cloudflare.speedtest.CloudflareSpeedTest(count: int = 3, warmup_bytes: int = 100000)`: Runs a speed test using Cloudflare's network, performing `count` tests after a warmup phase. (Dispatcher for `CloudflareSpeedTestLinuxImplementation`)
+---
+---
+
+LLM Judge's Assessment (Model: gpt-4.1):
+---
+**Evaluation of Retrieved Context for NetUnicorn Script Generation**
+
+---
+
+### 1. Relevance
+
+- **Chunk 1:** Describes example measurement pipelines in NetUnicorn. While it shows that measurement and analysis tasks can be chained, it does not mention DNS queries, Alexa websites, or pcap/5-tuple extraction directly. Only tangentially relevant.
+- **Chunk 2:** Highly relevant. Lists preprocessing tasks for pcap files, including `Get5Tuples` and `GetDNSQueries`, which are directly related to extracting 5-tuple data and DNS queries from captured traffic.
+- **Chunk 3:** Highly relevant. Describes `AlexaWebsitesTask`, which performs network measurements (including DNS queries) to Alexa Top sites. This aligns directly with the user's request to run DNS queries to Alexa websites.
+
+**Irrelevant Chunks:** None are completely irrelevant, but Chunk 1 is only marginally relevant.
+
+---
+
+### 2. Sufficiency
+
+- The context provides:
+    - A way to perform DNS queries to Alexa websites (`AlexaWebsitesTask`).
+    - Methods to process pcap files and extract 5-tuple data (`Get5Tuples`).
+- **Missing Information:**
+    - There is no explicit mention of how to capture network traffic (i.e., how to generate or collect a pcap file within a NetUnicorn pipeline or task).
+    - No example or reference to a task or pipeline that combines traffic capture with running a DNS query test.
+    - No guidance on chaining these tasks together in a script (e.g., order of execution, data passing).
+- The context is close, but lacks a crucial step: capturing the network traffic.
+
+---
+
+### 3. Helpfulness
+
+- The context would help an LLM identify the right tasks for DNS queries to Alexa sites and for extracting 5-tuple data from pcap files.
+- However, the absence of information about capturing network traffic (e.g., a `CaptureTrafficTask` or similar) could lead the LLM to generate an incomplete or incorrect script, or to make unsupported assumptions.
+- The context does not mislead, but it leaves a gap that could result in an incomplete solution.
+
+---
+
+### 4. Overall Assessment & Suggestions
+
+**Assessment:**  
+**Adequate.** The context is relevant and partially helpful, but not fully sufficient. It covers DNS queries to Alexa sites and pcap processing, but omits how to capture the network traffic, which is a critical step in the user's request.
+
+**Suggestions for Improvement:**
+- Retrieve documentation or examples for tasks/pipelines that capture network traffic (e.g., a `CaptureTrafficTask`, `tcpdump`, or similar).
+- Include examples or documentation on how to chain measurement and preprocessing tasks in a NetUnicorn script.
+- If available, provide a sample pipeline or script that demonstrates the full workflow: capture traffic → run DNS queries → process pcap for 5-tuple extraction.
+
+---
+
+<scores>
+    Relevance: 4
+    Sufficiency: 3
+    Helpfulness: 3
+    Overall: 3
+</scores>
+---
+================================================================================
+
+Scores:
+---
+
+    Relevance: 4
+    Sufficiency: 3
+    Helpfulness: 3
+    Overall: 3
+
+---

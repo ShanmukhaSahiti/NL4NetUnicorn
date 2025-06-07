@@ -1,0 +1,77 @@
+
+================================================================================
+LLM JUDGE CONTEXT APTNESS EVALUATION
+================================================================================
+
+Original User Prompt:
+---
+Create a NetUnicorn script that performs a port knock on a server and then executes a shell command if the knock was successful
+---
+
+Retrieved Context (Top 3 chunks shown to judge):
+---
+Chunk 1 (Source: NetUnicorn Library: utils Tasks):
+General utility tasks from `netunicorn.library.tasks.utils`: - `utils.network.PortKnock(ip: str, port: int)`: Attempts a single TCP connection (a \"knock\"). - `utils.sleep.RandomSleepTask(seconds_min: int, seconds_max: int)`: A TaskDispatcher that returns a `SleepTask` (from `basic.py`) with a random duration.
+---
+Chunk 2 (Source: NetUnicorn Full Script Structure Example (Generic Task Flow)):
+A typical NetUnicorn script involves the following general flow. Replace TaskName with the specific task you want to run, and ensure its correct import and any specific environment definition needs are met based on other documentation entries.  ```python # 1. Standard Imports import os import time from pprint import pprint  # 2. NetUnicorn Core Imports from netunicorn.client.remote import RemoteClient, RemoteClientException from netunicorn.base.pipeline import Pipeline from netunicorn.base.experiment import Experiment, ExperimentStatus from netunicorn.base.environment_definitions import ShellExecution # Example, only if needed  # 3. NetUnicorn Task Imports (Replace with actual task) # from netunicorn.library.tasks.basic import SleepTask # Example: SleepTask # from netunicorn.library.tasks.flags import ExecuteShellCommand # Example: ExecuteShellCommand # from netunicorn.library.tasks import SomeOtherTask # Placeholder for your specific task
+---
+Chunk 3 (Source: NetUnicorn Basic Client Usage):
+To interact with NetUnicorn, you first need to create a RemoteClient instance. Example:  from netunicorn.client.remote import RemoteClient client = RemoteClient(endpoint='your_endpoint', login='your_login', password='your_password') client.healthcheck() can be used to verify the connection.
+---
+---
+
+LLM Judge's Assessment (Model: gpt-4.1):
+---
+**1. Relevance**
+
+- **Chunk 1** is directly relevant. It describes the `PortKnock` utility in the NetUnicorn library, which is central to the user's request. It also mentions a sleep task, which is not directly requested but could be useful in scripting.
+- **Chunk 2** is relevant as it provides the general structure of a NetUnicorn script, including imports and how to define and use tasks. It also hints at how to execute shell commands via tasks (though only as a placeholder).
+- **Chunk 3** is somewhat relevant. It explains how to instantiate a NetUnicorn client and perform a health check, which is foundational for any NetUnicorn script, though not specific to port knocking or conditional shell execution.
+
+No chunk is entirely irrelevant, but Chunk 3 is the least directly related to the specific task.
+
+**2. Sufficiency**
+
+- The context is **not fully sufficient**. While it provides:
+    - The existence and usage of `PortKnock`
+    - The general script structure
+    - How to instantiate a client
+- It is missing:
+    - How to check if the port knock was successful (i.e., does `PortKnock` return a status? How is success/failure determined?)
+    - How to conditionally execute a shell command based on the result of the port knock
+    - The actual import path or usage example for executing a shell command (e.g., is there a `ExecuteShellCommand` task? How is it used?)
+    - How to chain tasks or handle conditional logic in NetUnicorn scripts
+
+**3. Helpfulness**
+
+- The context is **moderately helpful**. It gives the LLM enough to start constructing the skeleton of the script and to know which components are involved. However, due to missing details on conditional execution and shell command invocation, the LLM may have to guess or hallucinate the specifics, which could lead to errors or incomplete scripts.
+
+**4. Overall Assessment & Suggestions**
+
+- **Assessment:** Adequate
+- **Suggestions:** To improve, the retrieval should include:
+    - Documentation or examples showing how to check the result of a `PortKnock` task
+    - Documentation or examples for executing shell commands (e.g., `ExecuteShellCommand` task), including import paths and usage
+    - Examples or documentation on conditional task execution or branching logic in NetUnicorn scripts
+
+---
+
+<scores>
+    Relevance: 4
+    Sufficiency: 2
+    Helpfulness: 3
+    Overall: 3
+</scores>
+---
+================================================================================
+
+Scores:
+---
+
+    Relevance: 4
+    Sufficiency: 2
+    Helpfulness: 3
+    Overall: 3
+
+---

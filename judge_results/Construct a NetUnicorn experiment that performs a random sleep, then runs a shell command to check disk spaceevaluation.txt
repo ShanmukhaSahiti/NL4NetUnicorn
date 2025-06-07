@@ -1,0 +1,97 @@
+
+================================================================================
+LLM JUDGE CONTEXT APTNESS EVALUATION
+================================================================================
+
+Original User Prompt:
+---
+Construct a NetUnicorn experiment that performs a random sleep, then runs a shell command to check disk space
+---
+
+Retrieved Context (Top 3 chunks shown to judge):
+---
+Chunk 1 (Source: NetUnicorn Library: utils Tasks):
+General utility tasks from `netunicorn.library.tasks.utils`: - `utils.network.PortKnock(ip: str, port: int)`: Attempts a single TCP connection (a \"knock\"). - `utils.sleep.RandomSleepTask(seconds_min: int, seconds_max: int)`: A TaskDispatcher that returns a `SleepTask` (from `basic.py`) with a random duration.
+---
+Chunk 2 (Source: NetUnicorn Full Script Structure Example (Generic Task Flow)):
+A typical NetUnicorn script involves the following general flow. Replace TaskName with the specific task you want to run, and ensure its correct import and any specific environment definition needs are met based on other documentation entries.  ```python # 1. Standard Imports import os import time from pprint import pprint  # 2. NetUnicorn Core Imports from netunicorn.client.remote import RemoteClient, RemoteClientException from netunicorn.base.pipeline import Pipeline from netunicorn.base.experiment import Experiment, ExperimentStatus from netunicorn.base.environment_definitions import ShellExecution # Example, only if needed  # 3. NetUnicorn Task Imports (Replace with actual task) # from netunicorn.library.tasks.basic import SleepTask # Example: SleepTask # from netunicorn.library.tasks.flags import ExecuteShellCommand # Example: ExecuteShellCommand # from netunicorn.library.tasks import SomeOtherTask # Placeholder for your specific task
+---
+Chunk 3 (Source: NetUnicorn Library Task: ShellCommand):
+The `ShellCommand` task allows you to run arbitrary shell commands on the target node. **Import:** `from netunicorn.library.tasks.basic import ShellCommand` **Usage:** In a pipeline: `pipeline.then(ShellCommand(command=['echo', 'Hello from NetUnicorn Node']))` or `pipeline.then(ShellCommand(command='echo \"Legacy Mode Example\"'))`. Prefer list format. **Considerations:** - This task **requires** the experiment's `environment_definition` to be set to `ShellExecution`. - Import `ShellExecution` with: `from netunicorn.base.environment_definitions import ShellExecution` - Set it on the experiment object: `experiment.environment_definition = ShellExecution()` (typically before `client.prepare_experiment(...)`).
+---
+---
+
+LLM Judge's Assessment (Model: gpt-4.1):
+---
+**Evaluation of Retrieved Context for NetUnicorn Script Generation**
+
+---
+
+### 1. Relevance
+
+- **Chunk 1:** Highly relevant. It describes the `RandomSleepTask`, which directly addresses the "random sleep" part of the user prompt.
+- **Chunk 2:** Relevant. It provides the general structure of a NetUnicorn script, including imports and placeholders for tasks, which is necessary for constructing a complete script.
+- **Chunk 3:** Highly relevant. It details the `ShellCommand` task, which is needed for running a shell command to check disk space, and also mentions the requirement for `ShellExecution` as the environment definition.
+
+**No irrelevant chunks are present.**
+
+---
+
+### 2. Sufficiency
+
+- The context provides:
+  - The existence and usage of a random sleep task (`RandomSleepTask`).
+  - The existence and usage of a shell command task (`ShellCommand`), including import statements and environment requirements.
+  - The general script structure for NetUnicorn experiments.
+- **Missing Details:**
+  - The exact import path for `RandomSleepTask` is not explicitly shown (only described in text, not as an import statement).
+  - There is no explicit example of chaining multiple tasks (e.g., how to add both a sleep and a shell command in a single pipeline).
+  - The specific shell command to check disk space (e.g., `df -h`) is not mentioned, though this is arguably outside the scope of NetUnicorn documentation.
+  - No explicit example of setting up the pipeline with both tasks in sequence.
+
+**Overall, the context is nearly sufficient but could be improved with a concrete example of combining these tasks.**
+
+---
+
+### 3. Helpfulness
+
+- The context is generally helpful:
+  - It gives the LLM the necessary building blocks (task names, imports, usage patterns, and environment requirements).
+  - The LLM can infer how to construct the script, but may need to make minor assumptions (e.g., exact import for `RandomSleepTask`, chaining tasks).
+- **Potential for confusion:** The lack of a direct example of combining `RandomSleepTask` and `ShellCommand` in a pipeline could cause uncertainty for less experienced users or LLMs.
+
+---
+
+### 4. Overall Assessment & Suggestions
+
+**Assessment:**  
+**Adequate.** The context is relevant and mostly sufficient, but not fully optimal. It would benefit from:
+- Explicit import statements for all referenced tasks (especially `RandomSleepTask`).
+- A concrete example of a pipeline that chains multiple tasks (sleep, then shell command).
+- A brief mention or example of a disk space check command (e.g., `df -h`), though this is less critical.
+
+**Suggestions for Improvement:**
+- Retrieve or include a code snippet showing how to chain multiple tasks in a NetUnicorn pipeline.
+- Provide explicit import statements for all tasks used.
+- Optionally, include a common disk space check command as an example argument for `ShellCommand`.
+
+---
+
+<scores>
+    Relevance: 5
+    Sufficiency: 4
+    Helpfulness: 4
+    Overall: 4
+</scores>
+---
+================================================================================
+
+Scores:
+---
+
+    Relevance: 5
+    Sufficiency: 4
+    Helpfulness: 4
+    Overall: 4
+
+---

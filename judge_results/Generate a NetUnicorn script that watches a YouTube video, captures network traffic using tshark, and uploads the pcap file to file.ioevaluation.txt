@@ -1,0 +1,93 @@
+
+================================================================================
+LLM JUDGE CONTEXT APTNESS EVALUATION
+================================================================================
+
+Original User Prompt:
+---
+Generate a NetUnicorn script that watches a YouTube video, captures network traffic using tshark, and uploads the pcap file to file.io
+---
+
+Retrieved Context (Top 3 chunks shown to judge):
+---
+Chunk 1 (Source: NetUnicorn Library: capture Tasks):
+Tasks from `netunicorn.library.tasks.capture` for network traffic capture: - `capture.tcpdump.StartCapture(filepath: str, arguments: Optional[List[str]] = None)`: Starts a tcpdump process, saving output to `filepath`. Custom `arguments` can be provided. - `capture.tcpdump.StopNamedCapture(name: str)`: Stops a tcpdump process that was started with a specific `name` (referring to the `StartCapture` task name). - `capture.tcpdump.StopAllCapture()`: Stops all currently running tcpdump processes initiated by the library on the node. - `capture.tshark.StartCapture(filepath: str, arguments: Optional[List[str]] = None)`: Starts a tshark process, saving output to `filepath`. Custom `arguments` can be provided. - `capture.tshark.StopNamedCapture(name: str)`: Stops a tshark process started with a specific `name`. - `capture.tshark.StopAllCapture()`: Stops all currently running tshark processes initiated by the library on the node.
+---
+Chunk 2 (Source: NetUnicorn Full Script Structure Example (Generic Task Flow)):
+A typical NetUnicorn script involves the following general flow. Replace TaskName with the specific task you want to run, and ensure its correct import and any specific environment definition needs are met based on other documentation entries.  ```python # 1. Standard Imports import os import time from pprint import pprint  # 2. NetUnicorn Core Imports from netunicorn.client.remote import RemoteClient, RemoteClientException from netunicorn.base.pipeline import Pipeline from netunicorn.base.experiment import Experiment, ExperimentStatus from netunicorn.base.environment_definitions import ShellExecution # Example, only if needed  # 3. NetUnicorn Task Imports (Replace with actual task) # from netunicorn.library.tasks.basic import SleepTask # Example: SleepTask # from netunicorn.library.tasks.flags import ExecuteShellCommand # Example: ExecuteShellCommand # from netunicorn.library.tasks import SomeOtherTask # Placeholder for your specific task
+---
+Chunk 3 (Source: NetUnicorn Library: Example Pipelines (measurements)):
+The `netunicorn.library.pipelines.measurements` module provides example pre-defined pipelines such as `simple_speedtest_pipeline()` or `netflex_ookla_full_loop_pipeline()`. These demonstrate how to chain measurement, data transfer, and analysis tasks.
+---
+---
+
+LLM Judge's Assessment (Model: gpt-4.1):
+---
+**Evaluation of Retrieved Context for NetUnicorn Script Generation**
+
+---
+
+### 1. Relevance
+
+- **Chunk 1**: Highly relevant. It directly describes NetUnicorn tasks for capturing network traffic using both tcpdump and tshark, including the relevant function signatures. This aligns with the user's request to capture network traffic with tshark.
+- **Chunk 2**: Relevant. It provides the general structure of a NetUnicorn script, including imports and how to define and use tasks. This is necessary for script generation.
+- **Chunk 3**: Marginally relevant. It mentions example pipelines for measurements and data transfer, but does not provide specifics about uploading files (e.g., to file.io) or about watching YouTube videos. Its relevance is limited to showing that pipelines can chain tasks, but it does not directly address the user's requirements.
+
+**Irrelevant Content**: None of the chunks are completely irrelevant, but Chunk 3 is only tangentially related.
+
+---
+
+### 2. Sufficiency
+
+- **Present Information**:
+    - How to start and stop tshark captures with NetUnicorn.
+    - The general structure for writing a NetUnicorn script.
+- **Missing Information**:
+    - No information on how to automate or script watching a YouTube video within NetUnicorn (e.g., via browser automation or command-line tools like `youtube-dl` or `mpv`).
+    - No details or examples on how to upload files to file.io from within a NetUnicorn task or pipeline (e.g., via HTTP POST or using a shell command).
+    - No example of chaining these tasks together in a pipeline or script.
+    - No mention of how to handle task dependencies or sequencing (e.g., start capture, play video, stop capture, upload file).
+
+**Conclusion**: The context is insufficient for fully addressing the user's prompt. Key steps (YouTube playback automation and file upload) are missing.
+
+---
+
+### 3. Helpfulness
+
+- The context provides a solid foundation for the network capture part and the script structure, which would help an LLM avoid basic mistakes in those areas.
+- However, the lack of information on YouTube video playback and file upload means the LLM would have to "hallucinate" or guess how to implement these steps, which could lead to incomplete or incorrect scripts.
+- The context would not mislead the LLM, but it would leave significant gaps that the LLM would have to fill with general knowledge or assumptions.
+
+---
+
+### 4. Overall Assessment & Suggestions
+
+**Assessment**: **Adequate**. The context is relevant and partially helpful, but not sufficient. It covers the NetUnicorn-specific aspects of network capture and script structure, but omits critical details for automating YouTube playback and uploading the pcap file to file.io.
+
+**Suggestions for Improvement**:
+- Retrieve documentation or examples on:
+    - How to execute arbitrary shell commands or scripts within NetUnicorn tasks (e.g., to launch a browser or use a CLI tool to play a YouTube video).
+    - How to upload files to external services (like file.io) from within NetUnicorn (e.g., via a shell command or a Python task).
+    - Examples of chaining multiple tasks (capture, playback, upload) in a single pipeline.
+    - Any NetUnicorn utilities or best practices for handling file outputs and task dependencies.
+
+---
+
+<scores>
+    Relevance: 4
+    Sufficiency: 2
+    Helpfulness: 3
+    Overall: 3
+</scores>
+---
+================================================================================
+
+Scores:
+---
+
+    Relevance: 4
+    Sufficiency: 2
+    Helpfulness: 3
+    Overall: 3
+
+---
